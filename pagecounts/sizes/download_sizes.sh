@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# This script downloads the size of all the wikipedia
+# dump files we want to retrieve (<filename>, <size>).
+#
+# Written by Cristian Consonni <cristian.consonni@unitn.it>
+# Modified by Giovanni De Toni <giovanni.det@gmail.com>
 
 debug=false
 date_start=''
@@ -24,6 +30,12 @@ set -euo pipefail
 IFS=$'\n\t'
 
 BASEURL="https://dumps.wikimedia.org/other/pagecounts-raw"
+
+# Check if we have xidel installed
+if ! type "xidel" &> /dev/null; then
+  echo "[ERROR] This script need xidel to work. Quitting."
+  exit 1
+fi
 
 if $debug; then
     function echodebug() {
@@ -73,8 +85,14 @@ for year in $(seq "$year_start" "$year_end"); do
         output="${year}-${month}.txt"
         tmp_output="${output}.tmp"
 
-            echo "wget -O ${tmp_output} $url"
+        echo "wget -O ${tmp_output} $url"
+
+        # Enable wget verbosity only on debug mode
+        if $debug; then
             wget -O "${tmp_output}" "$url"
+        else
+            wget --quiet --show-progress -O "${tmp_output}" "$url"
+        fi
 
          [ -f "${tmp_output}" ] && \
                 xidel --extract "//li" "${tmp_output}" > "${output}"
