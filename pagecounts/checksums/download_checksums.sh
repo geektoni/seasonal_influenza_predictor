@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# This script downloads the checksums of the
+# Wikipedia dump files (all years and all months).
+#
+# Written by Cristan Consonni <cristian.consonni@unitn.it>
+
 debug=false
 date_start=''
 date_end=''
@@ -72,6 +78,6 @@ for year in $(seq "$year_start" "$year_end"); do
 		output="${year}-${month}.md5sum.txt"
 
         echo "wget -O ${output} $url"
-        wget -O "${output}" "$url" 
+        wget -O "${output}" "$url"
     done
 done

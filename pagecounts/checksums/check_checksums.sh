@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# This script checks the checksums of the
+# Wikipedia dump files (provided a directory).
+#
+# Written by Cristan Consonni <cristian.consonni@unitn.it>
 
 quiet=false
 debug=false
@@ -62,7 +67,7 @@ fi
 ####
 # cat md5sums/1/*/stdout | grep -c "OK$"
 # grep -c ../../../sizes/${year}-${month}.txt
-# grep -c gz joblog 
+# grep -c gz joblog
 ####
 num_cat=$(find "${checkdir}/md5sums/" -type f -name 'stdout' -exec cat {} \; | \
 	grep pagecounts | \
