@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+#
+# This scripts downloads the wikipedia dump files of a specific
+# year and month.
+# To use this script you must run in this order:
+#   1) data/make_dirs.sh (to generate the output directories)
+#   2) sizes/download_sizes.sh (to download the file names and sizes)
+#
+# Written by Cristan Consonni <cristian.consonni@unitn.it>
+# Modified by Giovanni De Toni <giovanni.det@gmail.com>
 
 continue=''
 debug=false
@@ -36,10 +45,16 @@ IFS=$'\n\t'
 
 workdir='scripts'
 
+# Check if we have aria2c
+if ! type "aria2c" &> /dev/null; then
+    echo "[ERROR] Needs aria2c to work. Quitting."
+    exit 1
+fi
+
 if $debug; then
     echo -e "year: \t\t $year"
     echo -e "month: \t\t $month"
- 
+
     echo -e "continue: \t $continue"
     echo -e "debug: \t\t $debug"
     echo -e "kill: \t\t $kill"
