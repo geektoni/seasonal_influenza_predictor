@@ -24,6 +24,6 @@ name=$(basename "$sizefile")
 year=$(echo "$name" | tr -d  '.tx' | awk -F'-' '{print $1}')
 month=$(echo "$name" | tr -d '.tx' | awk -F'-' '{print $2}')
 
-echo "$year-$month"
+echo "[*] Generating list for $year-$month"
 
-awk -F',' '{print $1}' "$sizefile" | parallel ./list.sh {} "$year" "$month" > "$name"
+awk -F',' '{print $1}' "$sizefile" | parallel --no-notice ./list.sh {} "$year" "$month" > "$name"
