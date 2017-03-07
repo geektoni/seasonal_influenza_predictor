@@ -4,8 +4,10 @@
 #
 # Written by Giovanni De Toni <giovanni.det@gmail.com>
 
+start_year=""
+end_year=""
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: build_lists.sh [options]
+Usage: build_lists.sh [options] <start_year> <end_year>
 
     -h, --help                  Show this help message and exits.
     --version                   Print version and copyright information.
@@ -21,7 +23,12 @@ EOF
 set -euo pipefail
 IFS=$'\n\t'
 
-for year in {2007..2016}; do
+if [ "$start_year" -le "$end_year" ]; then
+    echo "[ERROR] Start year must be greater than end year."
+    exit 1
+fi
+
+for year in $(seq "$start_year" "$end_year"); do
     for month in {01..12}; do
         if [ -f "../sizes/$year-$month.txt" -a ! -f "./$year-$month.txt" ]; then
             ./make_lists.sh ../sizes/$year-$month.txt
