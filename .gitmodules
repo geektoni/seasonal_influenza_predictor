@@ -1,0 +1,3 @@
+[submodule "pagecounts"]
+	path = pagecounts
+	url = git@github.com:geektoni/pagecounts.git
