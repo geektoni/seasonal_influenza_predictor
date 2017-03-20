@@ -98,7 +98,7 @@ fi
 # Generate the regexp concatenating
 # all the keyword
 regexp="$project ("
-for key in ${keywords[@]}
+for key in "${keywords[@]}"
 do
 	regexp="$regexp$key|"
 done
