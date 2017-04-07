@@ -77,7 +77,7 @@ print_debug "[*] Input directory value --> $input"
 print_debug "[*] Otput directory value --> $output"
 
 # All Wikipedia dump files
-dumps_files=`ls $input`
+dumps_files=`ls $input | grep .gz`
 
 # Set keywords, project and an other
 # section to add other constraints.
@@ -114,5 +114,12 @@ do
 	# Debug information
 	print_debug "[*] Analyzing file $file"
 	# Search keywords in every dump files
-	egrep $regexp $input'/'$file  | awk '{print $2 " " $3}' > $output/$file.output
+	{ zegrep $regexp $input'/'$file || true; }  | awk '{print $2 "," $3 "," $4 "," $5}' > $output/$file.output
+
+	# If the file generated is empty delete everything
+	if [ ! -s $output/$file.output ]; then
+		rm -rf $output/$file.output
+	fi
+
 done
+
