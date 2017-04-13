@@ -4,11 +4,16 @@ import pandas as pd
 # Set up a dictionary
 all_data={}
 
+number=0
+
 # Read from standard input
 for line in fileinput.input():
 
     # Split the line given
     result = str.split(line)
+	
+    # Print the line number analyzed
+    print(number)
 
     # Set up an empty list if the key
     # is null
@@ -17,7 +22,8 @@ for line in fileinput.input():
 
     # Sum the visit counter
     all_data[result[0]][int(result[1])] += int(result[2]);
-
+    number += 1;
+	
 # Print all the data
 #for key, value in all_data.iteritems():
 #    print(key)

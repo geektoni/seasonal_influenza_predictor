@@ -31,8 +31,9 @@ EOF
 
 # General variables
 export debug=0
-export input="/mnt/fluiddata/cconsonni/pagecounts/data/output/"
-export output="./"
+export new_input=0
+export input="/mnt/fluiddata/cconsonni/pagecounts/data/output"
+export output="./output"
 export year="2007"
 
 # Parse command line arguments
@@ -40,6 +41,7 @@ while getopts ":i:o:y:dvh" opt; do
 	case $opt in
 		i)
 			export input=$OPTARG
+			export new_input=1
       		;;
 		o)
 			export output=$OPTARG
@@ -82,16 +84,8 @@ function parse_files {
 	# Debug information
 	print_debug "[*] Analyzing file ${1:-}"
 
-	# Get only the filename
-	# Prevent errors if we are in a different directory
-	# than input one.
-	file_name=`basename ${1:-}`
-
-	echo ${1:-}
-	echo $file_name
-
 	# Search keywords in every dump files
-	#zegrep "$regexp" $input'/'$file_name | awk '{print $2 "," $3 "," $4 "," $5}' >> $output/$year.output
+	zegrep "$regexp" ${1:-} | awk '{print $2 "," $3 "," $4 "," $5}' >> $output/$year.output
 
 	# If the file generated is empty delete everything
 	#if [ ! -s $output/$file_name.output ]; then
@@ -105,7 +99,7 @@ print_debug "[*] Output directory value --> $output"
 print_debug "[*] Year requested --> $year"
 
 # All Wikipedia dump files of a specific year
-dumps_files=`ls $input/$year-*/*/*.gz`
+dumps_files=`ls $input/$year-*/output-*/*.gz`
 
 # Set keywords, project and an other
 # section to add other constraints.
@@ -121,6 +115,12 @@ other="."
 # Check if the output directory exists
 if [ ! -d $output ]; then
 	mkdir $output
+fi
+
+# Check if there is already a file
+if [ -f $output/$year.output ]; then
+	echo "The file $year.output already exists."
+	exit 1
 fi
 
 # Generate the regexp concatenating
@@ -144,8 +144,18 @@ export -f print_debug
 # Workaround to suppress parallel messages
 p_v=`parallel --version | grep parallel | head -1 | awk '{print $3}'`
 
+# Ugly way to manage custom input directories
+# FIXME
 if [ $p_v -ge 20141022 ]; then
-	ls $input/*.gz | parallel --no-notice parse_files
+	if [ ! $new_input -eq 1 ]; then
+		ls $input/$year-*/output-*/*.gz | parallel --no-notice parse_files
+	else
+		ls $input/*.gz | parallel --no-notice parse_files
+	fi
 else
-	ls $input/*.gz | parallel parse_files
+	if [ ! $new_input -eq 1 ]; then
+		ls $input/$year-*/output-*/*.gz | parallel parse_files
+	else
+		ls $input/*.gz | parallel parse_files
+	fi
 fi
