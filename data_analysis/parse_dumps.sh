@@ -84,19 +84,27 @@ function parse_files {
 	# Debug information
 	print_debug "[*] Analyzing file ${1:-}"
 
-	# Search keywords in every dump files
-	zegrep "$regexp" ${1:-} | awk '{print $2 "," $3 "," $4 "," $5}' >> $output/$year.output
+	# Get filename
+	file_name=`basename ${1:-}`
 
-	# If the file generated is empty delete everything
-	#if [ ! -s $output/$file_name.output ]; then
-	#	rm -rf $output/$file_name.output
-	#fi
+	# Get year-month
+	year_month=`echo ${1:-} |  cut -d'/' -f 8`
+
+	# Search keywords in every dump files
+	zegrep "$regexp" ${1:-} | awk '{print $2 "," $3 "," $4 "," $5}' >> "$output/$year_month-$file_name.output"
+
+	# Remove empty file (if zegrep didn't find anything)
+	if [ ! -s "$output/$year_month-$file_name.output" ]; then
+		rm "$output/$year_month-$file_name.output"
+	fi
+
 }
 
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Output directory value --> $output"
 print_debug "[*] Year requested --> $year"
+print_debug "[*] New input --> $new_input"
 
 # All Wikipedia dump files of a specific year
 dumps_files=`ls $input/$year-*/output-*/*.gz`
@@ -159,3 +167,12 @@ else
 		ls $input/*.gz | parallel parse_files
 	fi
 fi
+
+# Finally, merge together all the files
+for f in $output
+do
+	[[ -e $f ]] || break  # handle the case of no files
+	print_debug "[*] Merging file $f"
+	cat $f >> $output/$year.output
+	rm -rf ${$output:?}/$f
+done
