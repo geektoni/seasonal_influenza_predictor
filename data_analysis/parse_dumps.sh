@@ -15,6 +15,7 @@ Usage: parse_dumps [-o <file>] [-i <file>] [--debug]
 Options:
 	-o <output>  		Specify output directory
 	-i <input>   		Specify input directory
+	-y <year>			Year that should be analyzed
 	-d	 				Run with debug option.
 	-h					Show help options.
 	-v		  			Print program version.
@@ -30,17 +31,21 @@ EOF
 
 # General variables
 export debug=0
-export input="./data"
-export output="./output"
+export input="/mnt/fluiddata/cconsonni/pagecounts/data/output/"
+export output="./"
+export year="2007"
 
 # Parse command line arguments
-while getopts ":i:o:dvh" opt; do
+while getopts ":i:o:y:dvh" opt; do
 	case $opt in
 		i)
 			export input=$OPTARG
       		;;
 		o)
 			export output=$OPTARG
+			;;
+		y)
+			export year=$OPTARG
 			;;
 		d)
 			export debug=1
@@ -82,21 +87,25 @@ function parse_files {
 	# than input one.
 	file_name=`basename ${1:-}`
 
+	echo ${1:-}
+	echo $file_name
+
 	# Search keywords in every dump files
-	zegrep "$regexp" $input'/'$file_name | awk '{print $2 "," $3 "," $4 "," $5}' > $output/$file_name.output
+	#zegrep "$regexp" $input'/'$file_name | awk '{print $2 "," $3 "," $4 "," $5}' >> $output/$year.output
 
 	# If the file generated is empty delete everything
-	if [ ! -s $output/$file_name.output ]; then
-		rm -rf $output/$file_name.output
-	fi
+	#if [ ! -s $output/$file_name.output ]; then
+	#	rm -rf $output/$file_name.output
+	#fi
 }
 
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
-print_debug "[*] Otput directory value --> $output"
+print_debug "[*] Output directory value --> $output"
+print_debug "[*] Year requested --> $year"
 
-# All Wikipedia dump files
-dumps_files=`ls $input/*.gz`
+# All Wikipedia dump files of a specific year
+dumps_files=`ls $input/$year-*/*/*.gz`
 
 # Set keywords, project and an other
 # section to add other constraints.
