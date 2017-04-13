@@ -29,21 +29,21 @@ There is NO WARRANTY, to the extent permitted by law.
 EOF
 
 # General variables
-debug=0
-input="./data"
-output="./output"
+export debug=0
+export input="./data"
+export output="./output"
 
 # Parse command line arguments
 while getopts ":i:o:dvh" opt; do
 	case $opt in
 		i)
-			input=$OPTARG
+			export input=$OPTARG
       		;;
 		o)
-			output=$OPTARG
+			export output=$OPTARG
 			;;
 		d)
-			debug=1
+			export debug=1
 			;;
 		v)
 			#FIXME
@@ -72,12 +72,31 @@ function print_debug {
 	if [ $debug -ne 0 ]; then echo ${1:-}; fi
 }
 
+# Check all files for pattern
+function parse_files {
+	# Debug information
+	print_debug "[*] Analyzing file ${1:-}"
+
+	# Get only the filename
+	# Prevent errors if we are in a different directory
+	# than input one.
+	file_name=`basename ${1:-}`
+
+	# Search keywords in every dump files
+	zegrep "$regexp" $input'/'$file_name | awk '{print $2 "," $3 "," $4 "," $5}' > $output/$file_name.output
+
+	# If the file generated is empty delete everything
+	if [ ! -s $output/$file_name.output ]; then
+		rm -rf $output/$file_name.output
+	fi
+}
+
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Otput directory value --> $output"
 
 # All Wikipedia dump files
-dumps_files=`ls $input | grep .gz`
+dumps_files=`ls $input/*.gz`
 
 # Set keywords, project and an other
 # section to add other constraints.
@@ -97,7 +116,7 @@ fi
 
 # Generate the regexp concatenating
 # all the keyword
-regexp="$project ("
+export regexp="$project ("
 for key in "${keywords[@]}"
 do
 	regexp="$regexp$key|"
@@ -109,17 +128,15 @@ print_debug "[*] Regexp used --> $regexp"
 # For all dump files, chek for all the keywords
 # by generating a custom regular expression
 print_debug "[*] List all files: $dumps_files"
-for file in $dumps_files
-do
-	# Debug information
-	print_debug "[*] Analyzing file $file"
-	# Search keywords in every dump files
-	{ zegrep $regexp $input'/'$file || true; }  | awk '{print $2 "," $3 "," $4 "," $5}' > $output/$file.output
 
-	# If the file generated is empty delete everything
-	if [ ! -s $output/$file.output ]; then
-		rm -rf $output/$file.output
-	fi
+export -f parse_files
+export -f print_debug
 
-done
+# Workaround to suppress parallel messages
+p_v=`parallel --version | grep parallel | head -1 | awk '{print $3}'`
 
+if [ $p_v -ge 20141022 ]; then
+	ls $input/*.gz | parallel --no-notice parse_files
+else
+	ls $input/*.gz | parallel parse_files
+fi
