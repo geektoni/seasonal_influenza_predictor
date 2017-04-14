@@ -106,17 +106,18 @@ print_debug "[*] Output directory value --> $output"
 print_debug "[*] Year requested --> $year"
 print_debug "[*] New input --> $new_input"
 
-# All Wikipedia dump files of a specific year
-dumps_files=`ls $input/$year-*/output-*/*.gz`
-
 # Set keywords, project and an other
 # section to add other constraints.
 project="it"
 keywords=(
-	"Influenza"
-	"Virus"
-	"Vaccino"
+	"Influenza_Aviaria"
+	"Raffreddore_comune"
 	"Febbre"
+	"Influenza"
+	"Epidemia"
+	"Pandemia_influenzale"
+	"Influenza_suina"
+	"Vaccino"
 )
 other="."
 
@@ -124,6 +125,13 @@ other="."
 if [ ! -d $output ]; then
 	mkdir $output
 fi
+
+# Create year directory
+if [ ! -d $output/$year ]; then
+	mkdir $output/$year
+fi
+
+export output=$output/$year
 
 # Check if there is already a file
 if [ -f $output/$year.output ]; then
@@ -139,12 +147,13 @@ do
 	regexp="$regexp$key|"
 done
 regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
-regexp="$regexp)$other"
+regexp="$regexp) $other"
 print_debug "[*] Regexp used --> $regexp"
 
 # For all dump files, chek for all the keywords
 # by generating a custom regular expression
-print_debug "[*] List all files: $dumps_files"
+#dumps_files=`ls $input/$year-*/output-*/*.gz`
+#print_debug "[*] List all files: $dumps_files"
 
 export -f parse_files
 export -f print_debug
@@ -169,10 +178,10 @@ else
 fi
 
 # Finally, merge together all the files
-for f in $output
+for f in $output/*.gz.output
 do
 	[[ -e $f ]] || break  # handle the case of no files
 	print_debug "[*] Merging file $f"
 	cat $f >> $output/$year.output
-	rm -rf ${$output:?}/$f
+	rm -rf $f
 done
