@@ -47,15 +47,12 @@ function parse_files {
 	# Get filename
 	file_name=`basename ${1:-}`
 
-	# Get year-month
-	year_month=`echo ${1:-} |  cut -d'/' -f 8`
-
 	# Search keywords in every dump files
-	zegrep "$regexp" ${1:-} | awk '{print $2 "," $3 "," $4 "," $5}' >> "$output/$year_month-$file_name.output"
+	zegrep "$regexp" ${1:-} | awk '{print $2 "," $3 "," $4 "," $5}' >> "$output/$file_name.output"
 
 	# Remove empty file (if zegrep didn't find anything)
-	if [ ! -s "$output/$year_month-$file_name.output" ]; then
-		rm "$output/$year_month-$file_name.output"
+	if [ ! -s "$output/$file_name.output" ]; then
+		rm "$output/$file_name.output"
 	fi
 
 }
@@ -107,19 +104,15 @@ regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
 regexp="$regexp) $other"
 print_debug "[*] Regexp used --> $regexp"
 
-# For all dump files, chek for all the keywords
-# by generating a custom regular expression
-#dumps_files=`ls $input/$year-*/output-*/*.gz`
-#print_debug "[*] List all files: $dumps_files"
 
+# Export methods to make them visible for parallel
 export -f parse_files
 export -f print_debug
 
-# Workaround to suppress parallel messages
+# Get parallel version to manage no-notice option
 p_v=`parallel --version | grep parallel | head -1 | awk '{print $3}'`
 
-# Ugly way to manage custom input directories
-# FIXME
+# Parse the dump files
 if [ $p_v -ge 20141022 ]; then
 	ls $input/*.gz | parallel --no-notice parse_files
 else
@@ -132,5 +125,5 @@ do
 	[[ -e $f ]] || break  # handle the case of no files
 	print_debug "[*] Merging file $f"
 	cat $f >> $output/result.output
-	rm -rf $f
+	rm $f
 done
