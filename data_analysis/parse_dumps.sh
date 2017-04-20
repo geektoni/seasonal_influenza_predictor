@@ -68,9 +68,10 @@ print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Output directory value --> $output"
 
-# Check if the output directory exists
+# Check if the output directory exists. If it
+# is not present then create it (also with its parents)
 if [ ! -d $output ]; then
-	mkdir $output
+	mkdir -p $output
 fi
 
 # Read the regexp which will be used
