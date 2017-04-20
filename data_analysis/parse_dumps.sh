@@ -1,21 +1,24 @@
 #!/bin/bash
-# Parse Wikipedia dumps and get information of specific
-# pages, based on custom generated regexps.
+# Parse Wikipedia dumps and get information about specific
+# pages, based on custom regexps given by input.
 #
 # Written by Giovanni De Toni (2017)
+# Email: giovanni.det at gmail.com
 
 # General variables
 export input=''
 export output=''
+export regexp=''
 export debug=false
 
 # Usage and version information
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: parse_dumps [-i <input>] [-o <output>] [--debug]
+Usage: parse_dumps -e <regexp> [-i <input>] [-o <output>] [--debug]
 
 Options:
-	-i <input>		Specify input directory (default is ./input)
-	-o <output>		Specify output directory (default is ./output)
+	-e <regexp>		File containing the regular expression that will be used.
+	-i <input>		Specify input directory (default is ./input).
+	-o <output>		Specify output directory (default is ./output).
 	--debug			Run with debug option.
 	--help			Show help options.
 	--version		Print program version.
@@ -65,45 +68,14 @@ print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Output directory value --> $output"
 
-# Set keywords, project and an other
-# section to add other constraints.
-project="it"
-keywords=(
-	"Centro_europeo_per_la_prevenzione_e_il_controllo_delle_malattie"
-	"Epidemia"
-	"Febbre"
-	"Influenza"
-	"Influenza_Aviaria"
-	"Influenza_spagnola"
-	"Influenza_suina"
-	"Influenzavirus_A"
-	"Influenzavirus_A_sottotipo_H1N1"
-	"Oseltamivir"
-	"Pagina_Principale"
-	"Pandemia"
-	"Pandemia_influenzale"
-	"Raffreddore_comune"
-	"Vaccino"
-	"Vaccino_antinfluenzale"
-)
-other="."
-
 # Check if the output directory exists
 if [ ! -d $output ]; then
 	mkdir $output
 fi
 
-# Generate the regexp concatenating
-# all the keyword
-export regexp="$project ("
-for key in "${keywords[@]}"
-do
-	regexp="$regexp$key|"
-done
-regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
-regexp="$regexp) $other"
+# Read the regexp which will be used
+regexp=`cat $regexp`
 print_debug "[*] Regexp used --> $regexp"
-
 
 # Export methods to make them visible for parallel
 export -f parse_files
@@ -127,3 +99,36 @@ do
 	cat $f >> $output/result.output
 	rm $f
 done
+
+## OLD CODE
+# Generate the regexp concatenating
+# all the keyword
+#export regexp="$project ("
+#for key in "${keywords[@]}"
+#do
+#	regexp="$regexp$key|"
+#done
+#regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
+#regexp="$regexp) $other"
+# Set keywords, project and an other
+# section to add other constraints.
+#project="it"
+#keywords=(
+#	"Centro_europeo_per_la_prevenzione_e_il_controllo_delle_malattie"
+#	"Epidemia"
+#	"Febbre"
+#	"Influenza"
+#	"Influenza_Aviaria"
+#	"Influenza_spagnola"
+#	"Influenza_suina"
+#	"Influenzavirus_A"
+#	"Influenzavirus_A_sottotipo_H1N1"
+#	"Oseltamivir"
+#	"Pagina_Principale"
+#	"Pandemia"
+#	"Pandemia_influenzale"
+#	"Raffreddore_comune"
+#	"Vaccino"
+#	"Vaccino_antinfluenzale"
+#)
+#other="."
