@@ -6,28 +6,56 @@
 # Written by Giovanni De Toni (2017)
 # Email: giovanni.det at gmail.com
 
+"""Generate year files with page visits
+Usage:
+  generate_weekly_data.py <input> <output>
+
+Options:
+  -h, --help
+"""
+
 import fileinput
 import pandas as pd
+import datetime
+from docopt import docopt
+
+# Parse the command line
+arguments = docopt(__doc__)
 
 # Set up an empty dictionary
 all_data={}
 
-# Read from standard input
-for line in fileinput.input():
+# Read from file
+with open(arguments["<input>"], "r") as f:
+    for line in f:
 
-    # Split the line given
-    # 0: page name
-    # 1: week number
-    # 2: visits on that week
-    result = str.split(line)
+        # Split the line given
+        # 0: page name
+        # 1: date-hour
+        # 2: visits count
+        # 3: page size
+        total = line.split(",")
 
-    # Set up an empty list if the key
-    # is null
-    if all_data.get(result[0], []) == []:
-        all_data[result[0]] = [0 for x in range(53)]
+        # Get date-hour pair
+        # 0: date
+        # 1: hour
+        date = total[1].split("-")
 
-    # Sum the visits
-    all_data[result[0]][int(result[1])] += int(result[2]);
+        # Generate year month and day.
+        year = date[0][0:4]
+        month = date[0][4:6]
+        day = date[0][6:8]
+
+        # Get week number
+        week_number = datetime.date(int(year), int(month), int(day)).isocalendar()[1]
+
+        # Set up an empty list if the key
+        # is null
+        if all_data.get(total[0], []) == []:
+            all_data[total[0]] = [0 for x in range(53)]
+
+        # Sum the visits
+        all_data[total[0]][int(week_number)-1] += int(total[2]);
 
 # Generate a pandas dataframe with all the data
 df = pd.DataFrame(all_data);
@@ -36,4 +64,4 @@ df = pd.DataFrame(all_data);
 print(df)
 
 # Save it to file
-df.to_csv("result.csv", index_label="Week")
+df.to_csv(arguments["<output>"], index_label="Week")
