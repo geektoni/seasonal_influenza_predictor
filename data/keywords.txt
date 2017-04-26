@@ -17,4 +17,4 @@ Raffreddore_comune
 Rinorrea
 Vaccino
 Vaccino_antinfluenzale
-Virus_(biologia)
+Virus_\(biologia\)
