@@ -9,14 +9,17 @@
 export input=''
 export output=''
 export regexp=''
+export exp=''
+export pages=''
 export debug=false
 
 # Usage and version information
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: parse_dumps -e <regexp> [-i <input>] [-o <output>] [--debug]
+Usage: parse_dumps (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [--debug]
 
 Options:
-	-e <regexp>		File containing the regular expression that will be used.
+	-k <pages>		File containing the keywords which will be used.
+	-e <exp>		File containing the custom generated regexp.
 	-i <input>		Specify input directory (default is ./input).
 	-o <output>		Specify output directory (default is ./output).
 	--debug			Run with debug option.
@@ -40,6 +43,25 @@ IFS=$'\n\t'
 # and debug function
 function print_debug {
 	if $debug; then echo ${1:-}; fi
+}
+
+# Generate regexp given a list of words
+function generate_regexp {
+
+	# Set up project id, keywords and other field
+	project="it"
+	keywords=(`cat ${1:-}`)
+	other=' .'
+
+	# Build the regexp
+	regexp="$project ("
+	for key in "${keywords[@]}"
+	do
+		regexp="$regexp$key|"
+	done
+	regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
+	regexp="$regexp)$other"
+
 }
 
 # Check all files for pattern
@@ -67,6 +89,8 @@ if [ -z $output ]; then output='./output'; fi
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Output directory value --> $output"
+print_debug "[*] Custom regexp --> $exp"
+print_debug "[*] Keywords file --> $pages"
 
 # Check if the output directory exists. If it
 # is not present then create it (also with its parents)
@@ -75,7 +99,11 @@ if [ ! -d $output ]; then
 fi
 
 # Read the regexp which will be used
-regexp=`cat $regexp`
+if [ -z $exp ]; then
+	generate_regexp $pages
+else
+	regexp=`cat $exp`
+fi
 print_debug "[*] Regexp used --> $regexp"
 
 # Export methods to make them visible for parallel
@@ -101,18 +129,6 @@ do
 	rm $f
 done
 
-## OLD CODE
-# Generate the regexp concatenating
-# all the keyword
-#export regexp="$project ("
-#for key in "${keywords[@]}"
-#do
-#	regexp="$regexp$key|"
-#done
-#regexp=`echo $regexp | sed 's/\(.*\)|/\1/'`
-#regexp="$regexp) $other"
-# Set keywords, project and an other
-# section to add other constraints.
 #project="it"
 #keywords=(
 #	"Centro_europeo_per_la_prevenzione_e_il_controllo_delle_malattie"
