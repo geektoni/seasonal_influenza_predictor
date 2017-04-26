@@ -128,24 +128,3 @@ do
 	cat $f >> $output/result.output
 	rm $f
 done
-
-#project="it"
-#keywords=(
-#	"Centro_europeo_per_la_prevenzione_e_il_controllo_delle_malattie"
-#	"Epidemia"
-#	"Febbre"
-#	"Influenza"
-#	"Influenza_Aviaria"
-#	"Influenza_spagnola"
-#	"Influenza_suina"
-#	"Influenzavirus_A"
-#	"Influenzavirus_A_sottotipo_H1N1"
-#	"Oseltamivir"
-#	"Pagina_Principale"
-#	"Pandemia"
-#	"Pandemia_influenzale"
-#	"Raffreddore_comune"
-#	"Vaccino"
-#	"Vaccino_antinfluenzale"
-#)
-#other="."
