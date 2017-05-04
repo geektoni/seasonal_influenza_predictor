@@ -8,9 +8,10 @@
 
 """Generate year files with page visits
 Usage:
-  generate_weekly_data.py <input> <output>
+  generate_weekly_data.py <input> <output> [-c <columns>]
 
 Options:
+  -c    specify custom columns name.
   -h, --help
 """
 
@@ -24,6 +25,12 @@ arguments = docopt(__doc__)
 
 # Set up an empty dictionary
 all_data={}
+
+# If the columns are set, add them to the dataframe
+columns_df = []
+with open(argumens["<columns>"], "r") as f:
+    for line in f:
+        all_data[line]=[]
 
 # Future index
 index_year=[];
