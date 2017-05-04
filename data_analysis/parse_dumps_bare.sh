@@ -16,7 +16,7 @@ export debug=false
 
 # Usage and version information
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: parse_dumps (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [--debug]
+Usage: parse_dumps_bare (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [--debug]
 
 Options:
 	-k <pages>		File containing the keywords which will be used.
@@ -27,7 +27,7 @@ Options:
 	--help			Show help options.
 	--version		Print program version.
 ----
-parse_dumps 0.1.0
+parse_dumps_bare 0.1.0
 Copyright (C) 2017 Giovanni De Toni
 License MIT
 This is free software: you are free to change and redistribute it.
@@ -74,10 +74,10 @@ function parse_files {
 	file_name=`basename ${1:-}`
 
 	# Get date
-	log_date=`echo ${1:-} | tr "-" " " | awk '{print $2 "-" $3}'`
+	log_date=`echo $file_name | tr "-" " " | awk '{print $2 "-" $3}'`
 
 	# Search keywords in every dump files
-	zegrep "$regexp" ${1:-} | awk -v date=$log_date '{print $2 "," date "," $4 "," $5}' >> "$output/$file_name.output"
+	zegrep "$regexp" ${1:-} | awk -v date=$log_date '{print $2 "," date "," $3}' >> "$output/$file_name.output"
 
 	# Remove empty file (if zegrep didn't find anything)
 	if [ ! -s "$output/$file_name.output" ]; then
