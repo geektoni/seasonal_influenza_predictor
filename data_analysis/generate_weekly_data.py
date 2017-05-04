@@ -25,6 +25,9 @@ arguments = docopt(__doc__)
 # Set up an empty dictionary
 all_data={}
 
+# Future index
+index_year=[];
+
 # Read from file
 with open(arguments["<input>"], "r") as f:
     for line in f:
@@ -54,14 +57,21 @@ with open(arguments["<input>"], "r") as f:
         if all_data.get(total[0], []) == []:
             all_data[total[0]] = [0 for x in range(53)]
 
-        # Index
-        index=year+"-"+str(int(week_number)-1)
-
         # Sum the visits
-        all_data[total[0]][index] += int(total[2]);
+        all_data[total[0]][int(week_number)-1] += int(total[2]);
+
+
+for i in range(0, 53):
+	if i<10:
+		number="0"+str(i)
+	else:
+		number=str(i)
+	index_year.append(year+"-"+number)
 
 # Generate a pandas dataframe with all the data
+print index_year
 df = pd.DataFrame(all_data);
+df = df.set_index([index_year]);
 
 # Print the dataframe to show the result
 print(df)
