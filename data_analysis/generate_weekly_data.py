@@ -54,8 +54,11 @@ with open(arguments["<input>"], "r") as f:
         if all_data.get(total[0], []) == []:
             all_data[total[0]] = [0 for x in range(53)]
 
+        # Index
+        index=year+"-"+str(int(week_number)-1)
+
         # Sum the visits
-        all_data[total[0]][int(week_number)-1] += int(total[2]);
+        all_data[total[0]][index] += int(total[2]);
 
 # Generate a pandas dataframe with all the data
 df = pd.DataFrame(all_data);
