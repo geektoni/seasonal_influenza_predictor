@@ -28,9 +28,9 @@ all_data={}
 
 # If the columns are set, add them to the dataframe
 columns_df = []
-with open(argumens["<columns>"], "r") as f:
+with open(arguments["<columns>"], "r") as f:
     for line in f:
-        all_data[line]=[]
+        all_data[line.replace("\n", "")]=[0 for x in range(53)]
 
 # Future index
 index_year=[];
@@ -68,7 +68,7 @@ with open(arguments["<input>"], "r") as f:
         all_data[total[0]][int(week_number)-1] += int(total[2]);
 
 
-for i in range(0, 53):
+for i in range(1, 54):
 	if i<10:
 		number="0"+str(i)
 	else:
