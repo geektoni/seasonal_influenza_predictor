@@ -10,7 +10,6 @@ Influenzavirus_A_sottotipo_H1N1
 Istituto_superiore_di_sanità
 Malattia_infettiva
 Oseltamivir
-Pagina_Principale
 Pandemia
 Pandemia_influenzale
 Raffreddore_comune
