@@ -30,7 +30,8 @@ all_data={}
 columns_df = []
 with open(arguments["<columns>"], "r") as f:
     for line in f:
-        all_data[line.replace("\n", "")]=[0 for x in range(53)]
+        c_name = line.replace("\n", "").replace("\\", "")
+        all_data[c_name]=[0 for x in range(53)]
 
 # Future index
 index_year=[];
@@ -61,11 +62,11 @@ with open(arguments["<input>"], "r") as f:
 
         # Set up an empty list if the key
         # is null
-        if all_data.get(total[0], []) == []:
-            all_data[total[0]] = [0 for x in range(53)]
+        if all_data.get(total[0].replace("\\", ""), []) == []:
+            all_data[total[0].replace("\\", "")] = [0 for x in range(53)]
 
         # Sum the visits
-        all_data[total[0]][int(week_number)-1] += int(total[2]);
+        all_data[total[0].replace("\\", "")][int(week_number)-1] += int(total[2]);
 
 
 for i in range(1, 54):
