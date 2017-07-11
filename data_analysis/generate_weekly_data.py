@@ -16,8 +16,12 @@ Options:
 """
 
 import fileinput
+import requests
+import json
 import pandas as pd
+import numpy as np
 import datetime
+from tqdm import *
 from docopt import docopt
 
 # Parse the command line
@@ -25,6 +29,9 @@ arguments = docopt(__doc__)
 
 # Set up an empty dictionary
 all_data={}
+
+# Set up the wikipedia API link to check when a page was created
+wiki_url = "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvlimit=1&rvprop=timestamp&rvdir=newer&format=json&titles="
 
 # If the columns are set, add them to the dataframe
 columns_df = []
@@ -80,6 +87,31 @@ for i in range(1, 54):
 print index_year
 df = pd.DataFrame(all_data);
 df = df.set_index([index_year]);
+
+# Go through all data and set column value to NaN if the page was created
+# year after
+for c in tqdm(df.columns):
+    df[c] = df[c].astype(np.float64)
+    r = requests.get(wiki_url+str(c))
+    wiki_data = json.loads(r.content)
+    for i in range(0, 53):
+        # Generate week number original
+        week_number = df.index[i]
+        year_orig = week_number.split("-")[0]
+        week_orig = week_number.split("-")[1]
+        for key, value in wiki_data["query"]["pages"].items():
+            if key != u'-1':
+                week_str = value["revisions"][0]["timestamp"]
+
+                # Generate year month and day.
+                date = week_str.split("T")[0].split("-");
+                year = date[0]
+                month = date[1]
+                day = date[2]
+                week = datetime.date(int(year), int(month), int(day)).isocalendar()[1]
+
+                if (int(year) > int(year_orig) or int(week) > week_orig):
+                    df[c][i] = np.NaN
 
 # Print the dataframe to show the result
 print(df)
