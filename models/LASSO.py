@@ -195,14 +195,14 @@ print "LassoCV Imp alpha: ", lassoCV_imp.alpha_
 # from the LASSO model
 important_pages=[]
 for i in list(zip(lassoCV_imp.coef_, selected_columns)):
-    if (i[0] > 0):
-        important_pages.append(i[1])
+    if (i[0] != 0):
+        important_pages.append([i[0], i[1]]);
 
 # Print important pages
 print "------------"
 print "Pages which their weight is != from 0: "
 for i in important_pages:
-    print "* ", i
+    print "* ", i[1], "Weight: ", i[0]
 
 # Prim MSE of the two models
 print "------------"
