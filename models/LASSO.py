@@ -12,10 +12,12 @@ Options:
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LassoCV
+from sklearn.linear_model import LassoCV, ElasticNet
 from sklearn.preprocessing import Imputer
+from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 import os
+from tabulate import tabulate
 from docopt import docopt
 
 #### INITIALIZATION #####
@@ -32,7 +34,7 @@ path_labels = "./../data/influnet/csv";
 
 # Selected columns that will be extracted from the dataframes
 selected_columns = []
-file_ = open("../data/keywords2.txt", "r")
+file_ = open("../data/keywords/keywords2.txt", "r")
 for line in file_:
     if line != "Week":
         selected_columns.append(line.replace("\n", "").replace("\\", ""))
@@ -175,6 +177,17 @@ data_imp = imp.transform(data.fillna(0))
 dataset_zero = dataset.fillna(0);
 data_zero = data.fillna(0);
 
+# Standardize data
+data_total = np.concatenate((dataset_imp, data_imp), axis=0)
+dmean = data_total.mean(axis=0)
+dmax = data_total.max(axis=0)
+dmin = data_total.min(axis=0)
+dmax_min = dmax-dmin
+dataset_imp = (dataset_imp-dmean)/dmax_min
+data_imp = (data_imp-dmean)/dmax_min
+dataset_imp[np.isnan(dataset_imp)] = 0
+data_imp[np.isnan(data_imp)] = 0
+
 # Create a Lasso Cross-Validation instance which will be
 # trained on the dataset in which NaN values are replaced
 # with 0.
@@ -189,25 +202,29 @@ print "LassoCV alpha: ", lassoCV.alpha_
 lassoCV_imp = LassoCV(max_iter=100000, n_jobs=-1)
 lassoCV_imp.fit(dataset_imp, labels)
 result_lcv_imp = lassoCV_imp.predict(data_imp)
-print "LassoCV Imp alpha: ", lassoCV_imp.alpha_
+print "LassoCV Standardized alpha: ", lassoCV_imp.alpha_
 
 # Extract which features seems to be important
 # from the LASSO model
 important_pages=[]
 for i in list(zip(lassoCV_imp.coef_, selected_columns)):
     if (i[0] != 0):
-        important_pages.append([i[0], i[1]]);
+        important_pages.append([i[1], i[0]]);
+
+# Sort the pages by weights
+def getKey(item):
+    return item[1]
+important_pages = sorted(important_pages, key=getKey, reverse=True)
 
 # Print important pages
 print "------------"
 print "Pages which their weight is != from 0: "
-for i in important_pages:
-    print "* ", i[1], "Weight: ", i[0]
+print tabulate(important_pages, headers=["Page", "Mean"]);
 
 # Prim MSE of the two models
 print "------------"
 print "LASSO MSE: ", mean_squared_error(labels_test, result_lcv)
-print "LASSO with imputed NaN: ", mean_squared_error(labels_test, result_lcv_imp)
+print "LASSO Standardized MSE: ", mean_squared_error(labels_test, result_lcv_imp)
 
 # Plot some informations
 plt.ylabel("Incidenza su 1000 persone")
@@ -215,7 +232,7 @@ plt.xlabel("Settimane")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
 
 plt.plot(range(0, len(result_lcv)), result_lcv, 'o-', label="LassoCV Model")
-plt.plot(range(0, len(result_lcv_imp)), result_lcv_imp, 'd-', label="LassoCV Model Normalized")
+plt.plot(range(0, len(result_lcv_imp)), result_lcv_imp, 'd-', label="LassoCV Model Standardized")
 plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
 
 plt.legend()
