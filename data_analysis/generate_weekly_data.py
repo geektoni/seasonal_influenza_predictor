@@ -38,6 +38,7 @@ columns_df = []
 with open(arguments["<columns>"], "r") as f:
     for line in f:
         c_name = line.replace("\n", "").replace("\\", "")
+        columns_df.append(c_name)
         all_data[c_name]=[0 for x in range(53)]
 
 # Future index
@@ -54,26 +55,35 @@ with open(arguments["<input>"], "r") as f:
         # 3: page size
         total = line.split(",")
 
-        # Get date-hour pair
-        # 0: date
-        # 1: hour
-        date = total[1].split("-")
+        # Create the page only with specified columns
+        found = False
+        for p in columns_df:
+            if (p == total[0].replace("\\", "")):
+                found = True
+                break
 
-        # Generate year month and day.
-        year = date[0][0:4]
-        month = date[0][4:6]
-        day = date[0][6:8]
+        if (found):
 
-        # Get week number
-        week_number = datetime.date(int(year), int(month), int(day)).isocalendar()[1]
+            # Get date-hour pair
+            # 0: date
+            # 1: hour
+            date = total[1].split("-")
 
-        # Set up an empty list if the key
-        # is null
-        if all_data.get(total[0].replace("\\", ""), []) == []:
-            all_data[total[0].replace("\\", "")] = [0 for x in range(53)]
+            # Generate year month and day.
+            year = date[0][0:4]
+            month = date[0][4:6]
+            day = date[0][6:8]
 
-        # Sum the visits
-        all_data[total[0].replace("\\", "")][int(week_number)-1] += int(total[2]);
+            # Get week number
+            week_number = datetime.date(int(year), int(month), int(day)).isocalendar()[1]
+
+            # Set up an empty list if the key
+            # is null
+            if all_data.get(total[0].replace("\\", ""), []) == []:
+                all_data[total[0].replace("\\", "")] = [0 for x in range(53)]
+
+            # Sum the visits
+            all_data[total[0].replace("\\", "")][int(week_number)-1] += int(total[2]);
 
 
 for i in range(1, 54):
