@@ -44,11 +44,11 @@ selected_columns = [x.decode('utf-8') for x in selected_columns]
 
 def generate_features(year_a, year_b):
     if not year_a.empty:
-        first_part= year_a[selected_columns].copy()[42:52]
+        first_part= year_a.copy()[41:52]
     else:
         first_part = pd.DataFrame()
     if not year_b.empty:
-        second_part= year_b[selected_columns].copy()[0:15]
+        second_part= year_b.copy()[0:15]
     else:
         second_part = pd.DataFrame()
 
@@ -65,7 +65,7 @@ def generate(stop_year):
 
     for i in range(0, len(file_list)-1):
         # If the file's year is equal than stop_year then do anything
-        if int(file_list[i].replace(".csv", "")) != stop_year-1:
+        if int(file_list[i].replace(".csv", "")) != stop_year-1 and int(file_list[i].replace(".csv", "")) != 2007:
             tmp_a = pd.read_csv(os.path.join(path_features, file_list[i]), encoding = 'utf8', delimiter=',')
         else:
             tmp_a = pd.DataFrame()
@@ -92,7 +92,7 @@ def generate_one_year(year):
     file_list.sort()
 
     for i in range(0, len(file_list)-1):
-        if int(file_list[i].replace(".csv", "")) == year-1:
+        if int(file_list[i].replace(".csv", "")) == year-1 and int(file_list[i].replace(".csv", "")) != 2007:
             tmp_a = pd.read_csv(os.path.join(path_features, file_list[i]), encoding = 'utf8', delimiter=',')
         else:
             tmp_a = pd.DataFrame()
@@ -124,11 +124,10 @@ def generate_labels(stop_year):
 
             # Append data without the stop year
             years = file_list[i].replace("tabula-", "").split("_")
-            if int(years[1].replace(".csv", "")) != stop_year:
+            if int(years[1].replace(".csv", "")) != stop_year and int(years[0]) != 2007:
                 dataset = dataset.append(_file[0:11])
             if int(years[0]) != stop_year-1:
-                dataset = dataset.append(_file[11:25])
-
+                dataset = dataset.append(_file[11:26])
     return dataset
 
 def generate_labels_one_year(stop_year):
@@ -145,21 +144,24 @@ def generate_labels_one_year(stop_year):
 
             # Append data without the stop year
             years = file_list[i].replace("tabula-", "").split("_")
-            if int(years[1].replace(".csv", "")) == stop_year:
+            if int(years[1].replace(".csv", "")) == stop_year and int(years[0]) != 2007:
                 dataset = dataset.append(_file[0:11])
             if int(years[0]) == stop_year-1:
-                dataset = dataset.append(_file[11:25])
+                dataset = dataset.append(_file[11:26])
 
     return dataset
 
 ##### ALGORITHM ######
 
 # Data generation from data files
-dataset = generate(year_selected)
+dataset = generate(year_selected)[selected_columns]
 labels = generate_labels(year_selected)["Incidenza Totale"]
-data = generate_one_year(year_selected)
+data = generate_one_year(year_selected)[selected_columns]
 labels_test = generate_labels_one_year(year_selected)["Incidenza Totale"]
 weeks = generate_labels_one_year(year_selected)["Settimana"]
+
+generate(year_selected)["Week"].to_csv("dataset", encoding="utf8")
+generate_labels(year_selected)["Settimana"].to_csv("labels", encoding="utf8")
 
 print "Train set shape (rows/columns): ", dataset.shape
 print "Test set shape (rows/columns): ", data.shape
@@ -227,6 +229,7 @@ print "LASSO MSE: ", mean_squared_error(labels_test, result_lcv)
 print "LASSO Standardized MSE: ", mean_squared_error(labels_test, result_lcv_imp)
 
 # Plot some informations
+plt.figure(figsize=(20, 10))
 plt.ylabel("Incidenza su 1000 persone")
 plt.xlabel("Settimane")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
@@ -238,4 +241,5 @@ plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
 plt.legend()
 plt.margins(0.2)
 plt.subplots_adjust(bottom=0.15)
+plt.savefig(str(year_selected)+".png")
 plt.show()
