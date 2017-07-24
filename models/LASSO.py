@@ -29,12 +29,12 @@ arguments = docopt(__doc__)
 year_selected = int(arguments["<year>"])
 
 # Feature path and labels
-path_features = "./../data/wikipedia";
+path_features = "./../data/input/wikipedia_6";
 path_labels = "./../data/influnet/csv";
 
 # Selected columns that will be extracted from the dataframes
 selected_columns = []
-file_ = open("../data/keywords/keywords2.txt", "r")
+file_ = open("../data/keywords/keywords3.txt", "r")
 for line in file_:
     if line != "Week":
         selected_columns.append(line.replace("\n", "").replace("\\", ""))
@@ -160,9 +160,6 @@ data = generate_one_year(year_selected)[selected_columns]
 labels_test = generate_labels_one_year(year_selected)["Incidenza Totale"]
 weeks = generate_labels_one_year(year_selected)["Settimana"]
 
-generate(year_selected)["Week"].to_csv("dataset", encoding="utf8")
-generate_labels(year_selected)["Settimana"].to_csv("labels", encoding="utf8")
-
 print "Train set shape (rows/columns): ", dataset.shape
 print "Test set shape (rows/columns): ", data.shape
 print "------------"
@@ -241,5 +238,5 @@ plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
 plt.legend()
 plt.margins(0.2)
 plt.subplots_adjust(bottom=0.15)
-plt.savefig(str(year_selected)+".png")
+#plt.savefig(str(year_selected)+".png")
 plt.show()
