@@ -20,13 +20,8 @@ import csv
 
 from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, cross_validation_glm
 
-import glmnet_python
-from glmnet import glmnet; from glmnetPlot import glmnetPlot
-from glmnetPrint import glmnetPrint; from glmnetCoef import glmnetCoef; from glmnetPredict import glmnetPredict
-from cvglmnet import cvglmnet; from cvglmnetCoef import cvglmnetCoef
-from cvglmnetPlot import cvglmnetPlot; from cvglmnetPredict import cvglmnetPredict
-
-from pyglmnet import GLM
+from cvglmnetCoef import cvglmnetCoef
+from cvglmnetPredict import cvglmnetPredict
 
 #### INITIALIZATION #####
 
@@ -77,21 +72,23 @@ data_imp = (data_zero-dmean)/dmax_min
 dataset_imp[numpy.isnan(dataset_imp)] = 0
 data_imp[numpy.isnan(data_imp)] = 0
 
-# Create a Lasso Cross-Validation instance which will be
-# trained on the dataset in which NaN values are replaced
-# with 0.
-#fit = cvglmnet(x = dataset_imp.copy(), y = labels.copy().as_matrix(), family = 'poisson', alpha=0.01, ptype="mse")
-#cvglmnetPlot(fit)
+# Create the poisson model (use cross-validation to obtain the best alpha value
 result = cross_validation_glm(dataset_imp.as_matrix(), labels, data_imp, labels_test, runs=50)
+
+# Get the best fitted model
 fit = result[0][1]
+
+# Predict
 result_lcv = cvglmnetPredict(fit, data_imp.as_matrix(), ptype = 'response', s = "lambda_min")
+
+# Get the features weights
 coeff = cvglmnetCoef(fit, s = "lambda_min")
 
 # Regenerate panda dataframe with standardized data
 data_graph = pd.DataFrame(data=data_imp, columns=selected_columns)
 
 # Extract which features seems to be important
-# from the LASSO model
+# from the Poisson model
 important_pages=[]
 graph_pages=[]
 for i in list(zip(coeff, selected_columns)):
@@ -113,7 +110,7 @@ print (tabulate(important_pages, headers=["Page", "Mean"]))
 
 # Prim MSE of the two models
 print ("------------")
-print ("Poisson+LASSO MSE: ", mean_squared_error(labels_test, result_lcv))
+print ("Poisson MSE: ", mean_squared_error(labels_test, result_lcv))
 
 # Plot some informations
 plt.figure(figsize=(20, 10))
