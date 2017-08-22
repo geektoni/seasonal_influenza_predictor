@@ -12,8 +12,17 @@ from sklearn.model_selection import cross_val_score
 ##### UTILITIES #######
 
 #  Feature path and labels
-path_features = "./../data/wikipedia_470";
-path_labels = "./../data/influnet/csv";
+path_features = "./../data/wikipedia_random"
+path_labels = "./../data/influnet/csv"
+keywords = "../data/keywords/keywords_random.txt"
+
+def generate_keywords():
+    selected_columns = []
+    file_ = open(keywords, "r")
+    for line in file_:
+        if line != "Week":
+            selected_columns.append(line.replace("\n", "").replace("\\", ""))
+    return selected_columns
 
 def generate_features(year_a, year_b):
     if not year_a.empty:
@@ -123,6 +132,18 @@ def generate_labels_one_year(stop_year):
                 dataset = dataset.append(_file[11:26])
 
     return dataset
+
+def standardize_data(train, test):
+    data_total = np.concatenate((train, test), axis=0)
+    dmean = data_total.mean(axis=0)
+    dmax = data_total.max(axis=0)
+    dmin = data_total.min(axis=0)
+    dmax_min = dmax - dmin
+    dataset_imp = (train - dmean) / dmax_min
+    data_imp = (test - dmean) / dmax_min
+    dataset_imp[np.isnan(dataset_imp)] = 0
+    data_imp[np.isnan(data_imp)] = 0
+    return (dataset_imp, data_imp)
 
 def sort_cv(item):
     return item[2]

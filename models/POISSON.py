@@ -18,10 +18,11 @@ from docopt import docopt
 from colour import Color
 import csv
 
-from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, cross_validation_glm
+from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, cross_validation_glm, standardize_data, generate_keywords
 
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
+from cvglmnet import cvglmnet
 
 #### INITIALIZATION #####
 
@@ -31,16 +32,9 @@ arguments = docopt(__doc__)
 # Year selected
 year_selected = int(arguments["<year>"])
 
-# Feature path and labels
-path_features = "./../data/wikipedia"
-path_labels = "./../data/influnet/csv"
-
 # Selected columns that will be extracted from the dataframes
-selected_columns = []
-file_ = open("../data/keywords/keywords2.txt", "r")
-for line in file_:
-    if line != "Week":
-        selected_columns.append(line.replace("\n", "").replace("\\", ""))
+selected_columns = generate_keywords()
+
 
 ##### ALGORITHM ######
 
@@ -61,31 +55,21 @@ print ("------------")
 dataset_zero = dataset.fillna(0);
 data_zero = data.fillna(0);
 
-# Standardize data
-data_total = numpy.concatenate((dataset_zero, data_zero), axis=0)
-dmean = data_total.mean(axis=0)
-dmax = data_total.max(axis=0)
-dmin = data_total.min(axis=0)
-dmax_min = dmax-dmin
-dataset_imp = (dataset_zero-dmean)/dmax_min
-data_imp = (data_zero-dmean)/dmax_min
-dataset_imp[numpy.isnan(dataset_imp)] = 0
-data_imp[numpy.isnan(data_imp)] = 0
-
 # Create the poisson model (use cross-validation to obtain the best alpha value
-result = cross_validation_glm(dataset_imp.as_matrix(), labels, data_imp, labels_test, runs=50)
-
-# Get the best fitted model
-fit = result[0][1]
+fit = cvglmnet(x=dataset_zero.as_matrix().copy(), y=labels.copy().as_matrix(), family='poisson', alpha=1.0, ptype="mse", parallel=True, nfolds=10)
 
 # Predict
-result_lcv = cvglmnetPredict(fit, data_imp.as_matrix(), ptype = 'response', s = "lambda_min")
+result_lcv = cvglmnetPredict(fit, data_zero.as_matrix(), ptype = 'response', s = "lambda_min")
 
 # Get the features weights
 coeff = cvglmnetCoef(fit, s = "lambda_min")
 
 # Regenerate panda dataframe with standardized data
-data_graph = pd.DataFrame(data=data_imp, columns=selected_columns)
+data_graph = pd.DataFrame(data=data_zero, columns=selected_columns)
+
+train, test = standardize_data(dataset_zero, data_zero)
+fit_2 = cvglmnet(x=train.as_matrix().copy(), y=labels.copy().as_matrix(), family='poisson', alpha=1.0, ptype="mse", parallel=True, nfolds=10)
+result_lcv_std = cvglmnetPredict(fit_2, test.as_matrix(), ptype = 'response', s = "lambda_min")
 
 # Extract which features seems to be important
 # from the Poisson model
@@ -104,13 +88,14 @@ important_pages = sorted(important_pages, key=getKey, reverse=True)
 graph_pages = sorted(graph_pages, key=getKey, reverse=True)
 
 # Print important pages
-print ("------------")
-print ("Pages which their weight is != from 0: ")
-print (tabulate(important_pages, headers=["Page", "Mean"]))
+#print ("------------")
+#print ("Pages which their weight is != from 0: ")
+#print (tabulate(important_pages, headers=["Page", "Mean"]))
 
 # Prim MSE of the two models
 print ("------------")
 print ("Poisson MSE: ", mean_squared_error(labels_test, result_lcv))
+print ("Poisson Standardized MSE: ", mean_squared_error(labels_test, result_lcv_std))
 
 # Plot some informations
 plt.figure(figsize=(20, 10))
@@ -119,6 +104,7 @@ plt.xlabel("Settimane")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
 
 plt.plot(range(0, len(result_lcv)), result_lcv, 'o-', label="Poisson Model")
+plt.plot(range(0, len(result_lcv)), result_lcv_std, 'd-', label="Poisson Model Standardized")
 plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
 
 plt.legend()
@@ -147,5 +133,6 @@ with open(str(year_selected)+"_information_poisson.csv", 'w', newline='') as csv
     spamwriter = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     spamwriter.writerow(['mse', mean_squared_error(labels_test, result_lcv)])
+    spamwriter.writerow(['mse_standardized', mean_squared_error(labels_test, result_lcv_std)])
     for p in important_pages:
         spamwriter.writerow([p[0], float(p[1])])
