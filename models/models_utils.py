@@ -12,9 +12,9 @@ from sklearn.model_selection import cross_val_score
 ##### UTILITIES #######
 
 #  Feature path and labels
-path_features = "./../data/wikipedia_470"
+path_features = "./../data/wikipedia"
 path_labels = "./../data/influnet/csv"
-keywords = "../data/keywords/keywords2.txt"
+keywords = "../data/keywords/keywords.txt"
 
 def generate_keywords():
     selected_columns = []
