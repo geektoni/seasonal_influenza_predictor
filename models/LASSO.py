@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from sklearn.linear_model import LassoCV
+from sklearn.linear_model import LassoCV, LassoLarsCV
 from sklearn.metrics import mean_squared_error
 from tabulate import tabulate
 from colour import Color
@@ -65,10 +65,6 @@ lassoCV_imp.fit(train, labels)
 result_lcv_imp = lassoCV_imp.predict(test)
 print("LassoCV Standardized alpha: ", lassoCV_imp.alpha_)
 
-#model_lasso = Lasso(alpha=1.0, max_iter=100000)
-#model_lasso.fit(dataset_zero, labels)
-#result_lasso = model_lasso.predict(data_zero)
-
 # Extract which features seems to be important
 # from the LASSO model
 important_pages=[]
@@ -96,18 +92,18 @@ print("LASSO XVal MSE: ", mean_squared_error(labels_test, result_lcv_imp))
 print("------------")
 
 # Plot some informations
-font = {'size': 20}
+font = {'size': 18}
 
 matplotlib.rc('font', **font)
 
 plt.figure(1, figsize=(20, 10))
-plt.title("Stagione influenzale "+str(year_selected-1)+"-"+str(year_selected))
+plt.title("Stagione influenzale Ottobre "+str(year_selected-1)+" - Aprile "+str(year_selected))
 plt.ylabel("Incidenza su 1000 persone")
 plt.xlabel("Settimane")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
 
 plt.plot(range(0, len(result_lcv_imp)), result_lcv_imp, 'd-', label="Lasso Model (alpha selected by X-val)")
-plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
+plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Incidenza ILI")
 
 lgd = plt.legend(loc=1, borderaxespad=0.)
 plt.margins(0.2)
