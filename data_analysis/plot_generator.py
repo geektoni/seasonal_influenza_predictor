@@ -1,8 +1,15 @@
+# This script takes a InfluNet files and print on screen
+# the ILI curve during the seasonal influenza period.
+#
+# Written by Giovanni De Toni (2017)
+# Email: giovanni.det at gmail.com
+
 import sys
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
+# Set the font's size and weight.
 font = {
         'weight' : 'normal',
         'size'   : 20
@@ -22,6 +29,8 @@ plt.xlabel("Settimane")
 
 _range = range(0, len(weeks));
 
+# For each file provided as command line arguments
+# print its content on a plot.
 for f in range(0, len(sys.argv)-1):
     _file = sys.argv[f+1]
     document = pd.read_csv(_file)
