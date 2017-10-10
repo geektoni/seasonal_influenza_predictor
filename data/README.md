@@ -5,6 +5,12 @@ The data are taken from two different sources, Influnet and Influweb. All these 
 online as convenient PDF files that can be freely downloaded.
 [Tabula](http://tabula.technology) software was used to extract data tables from the aforementioned PDF files.
 
+There are also the Wikipedia data used to train and validate the model. The `wikipedia` directory contains the page views
+of the 470 feature (Wikipedia's pages) used and the `wikipedia_random` directory contains the data of the random
+Wikipedia's pages used to validate our model and confirm our hypothesis.
+
+The `keywords` directory contains the lists of Wikipedia's pages selected.
+
 ## Influnet
 Influnet (http://www.iss.it/iflu/) is an Italian epidemiological surveillance program which monitors ILI activity on a nation-wide
 basis by using data provided by sentinel physicians. The data are published weekly, in the form of bulletins, that
@@ -34,3 +40,6 @@ Each row gives these information:
 Each row gives these information:
 * **yearweek**: year and week in which the data were recorded;
 * **incidence**: total incidence of ILI cases on that week;
+
+### Wikipedia
+Each row consists of data regarding all the feauture for a specific week. cd

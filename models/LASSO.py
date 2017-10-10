@@ -12,15 +12,15 @@ Options:
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LassoCV
+import matplotlib
+from sklearn.linear_model import LassoCV, LassoLarsCV
 from sklearn.metrics import mean_squared_error
 from tabulate import tabulate
 from colour import Color
 from docopt import docopt
 import csv
 
-
-from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year
+from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz
 
 #### INITIALIZATION #####
 
@@ -31,11 +31,7 @@ arguments = docopt(__doc__)
 year_selected = int(arguments["<year>"])
 
 # Selected columns that will be extracted from the dataframes
-selected_columns = []
-file_ = open("../data/keywords/keywords2.txt", "r")
-for line in file_:
-    if line != "Week":
-        selected_columns.append(line.replace("\n", "").replace("\\", ""))
+selected_columns = generate_keywords()
 
 ##### ALGORITHM ######
 
@@ -46,7 +42,10 @@ data = generate_one_year(year_selected)[selected_columns]
 labels_test = generate_labels_one_year(year_selected)["Incidenza Totale"]
 weeks = generate_labels_one_year(year_selected)["Settimana"]
 
+print("------------")
+print(year_selected)
 print("Train set shape (rows/columns): ", dataset.shape)
+print("Labels (row/columns): ", labels_test.shape)
 print("Test set shape (rows/columns): ", data.shape)
 print("------------")
 
@@ -56,32 +55,23 @@ dataset_zero = dataset.fillna(0);
 data_zero = data.fillna(0);
 
 # Standardize data
-data_total = np.concatenate((dataset_zero, data_zero), axis=0)
-dmean = data_total.mean(axis=0)
-dmax = data_total.max(axis=0)
-dmin = data_total.min(axis=0)
-dmax_min = dmax-dmin
-dataset_imp = (dataset_zero-dmean)/dmax_min
-data_imp = (data_zero-dmean)/dmax_min
-dataset_imp[np.isnan(dataset_imp)] = 0
-data_imp[np.isnan(data_imp)] = 0
+train, test = standardize_data(dataset_zero, data_zero)
 
 # Regenerate panda dataframe with standardized data
-data_graph = pd.DataFrame(data=data_imp, columns=selected_columns);
+data_graph = pd.DataFrame(data=test, columns=selected_columns);
 
 # Create a Lasso Cross-Validation instance which will be
 # trained on the dataset in which NaN values are replaced
 # with the column mean.
-lassoCV_imp = LassoCV(max_iter=100000, n_jobs=-1)
-lassoCV_imp.fit(dataset_imp, labels)
-result_lcv_imp = lassoCV_imp.predict(data_imp)
-print("LassoCV Standardized alpha: ", lassoCV_imp.alpha_)
+model = LassoCV(max_iter=100000, n_jobs=-1, n_alphas=1000)
+model.fit(train, labels)
+model_results = model.predict(test)
 
 # Extract which features seems to be important
 # from the LASSO model
 important_pages=[]
 graph_pages=[]
-for i in list(zip(lassoCV_imp.coef_, selected_columns)):
+for i in list(zip(model.coef_, selected_columns)):
     if (i[0] != 0):
         if (i[0] > 0):
             graph_pages.append([i[1], i[0]])
@@ -94,51 +84,67 @@ important_pages = sorted(important_pages, key=getKey, reverse=True)
 graph_pages = sorted(graph_pages, key=getKey, reverse=True)
 
 # Print important pages
-print("------------")
 print("Pages which their weight is != from 0: ")
 print(tabulate(important_pages, headers=["Page", "Mean"]))
 
 # Prim MSE of the two models
 print("------------")
-#print("LASSO MSE: ", mean_squared_error(labels_test, result_lcv))
-print("LASSO Standardized MSE: ", mean_squared_error(labels_test, result_lcv_imp))
+print("LASSO XVal Alpha: ", model.alpha_)
+print("LASSO XVal MSE: ", mean_squared_error(labels_test, model_results))
+index_picco = labels_test.idxmax(axis=1)
+index_picco_m = np.argmax(model_results)
+print("Picco Influenzale:", weeks[index_picco])
+print("Picco Influenzale Modello: ", weeks[index_picco_m])
+print("Valore Picco: ", labels_test[index_picco])
+print("Valore Piccoo Modello: ", model_results[index_picco_m])
+print("------------")
+print()
 
 # Plot some informations
-plt.figure(1, figsize=(20, 10))
+font = {'size': 18}
+
+matplotlib.rc('font', **font)
+
+plt.figure(1, figsize=(15, 10))
+plt.title("Stagione influenzale Ottobre "+str(year_selected-1)+" - Aprile "+str(year_selected))
 plt.ylabel("Incidenza su 1000 persone")
 plt.xlabel("Settimane")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
 
-plt.plot(range(0, len(result_lcv_imp)), result_lcv_imp, 'd-', label="LassoCV Model Standardized")
-plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Actual Value")
+plt.plot(range(0, len(model_results)), model_results, 'd-', label="Lasso Model (alpha selected by X-val)")
+plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Incidenza ILI")
 
-plt.legend()
+lgd = plt.legend(loc=1, borderaxespad=0.)
 plt.margins(0.2)
 plt.subplots_adjust(bottom=0.15)
-plt.savefig(str(year_selected)+".png")
+plt.savefig(str(year_selected)+".png", bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=200)
 
-plt.figure(2, figsize=(20, 10))
-plt.ylabel("Numero di visite")
-plt.xlabel("Settimane")
+fig = plt.figure(2, figsize=(30, 10))
+ax = fig.add_subplot(111)
+plt.title("Andamento feature rispetto ad incidenza ILI")
+plt.ylabel("Incidenza standardizzata")
+plt.xlabel("Settimana")
 plt.xticks(range(0, len(weeks)), weeks, rotation="vertical")
 
 # All possible colors
+num_feat=5
 linestyles = ['-', '--', '-.', ':']
-colors =list(Color("blue").range_to(Color("red"), 10))
-for i in range(0, 10):
+colors =list(Color("blue").range_to(Color("red"), num_feat))
+for i in range(0, num_feat):
     if i>=len(graph_pages):
         break;
-    plt.plot(range(0, len(data_graph[graph_pages[i][0]])), data_graph[graph_pages[i][0]], marker='.', color=colors[i].hex_l, label=graph_pages[i][0], linestyle=linestyles[i%len(linestyles)])
+    plt.plot(range(0, len(data[graph_pages[i][0]])), stz(data_zero[graph_pages[i][0]]), marker='.', color=colors[i].hex_l, label=graph_pages[i][0])#, linestyle=linestyles[i%len(linestyles)])
+plt.plot(range(0, len(labels_test)), stz(labels_test), 'k-', label="Incidenza ILI", linewidth=5)
+plt.grid()
 
-lgd = plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title="Pages Selected")
-plt.margins(0.2)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig(str(year_selected)+"_feature.png", bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=200)
+lgd = plt.legend()
+plt.savefig(str(year_selected)+"_feature.png", bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=150)
 
 # Write information to file
 with open(str(year_selected)+"_information.csv", 'w', newline='') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(['mse', mean_squared_error(labels_test, result_lcv_imp)])
+    spamwriter.writerow(['mse', mean_squared_error(labels_test, model_results)])
+    spamwriter.writerow(['alpha', model.alpha_])
     for p in important_pages:
         spamwriter.writerow([p[0], p[1]])

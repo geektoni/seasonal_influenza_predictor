@@ -12,15 +12,27 @@ from sklearn.model_selection import cross_val_score
 ##### UTILITIES #######
 
 #  Feature path and labels
-path_features = "./../data/wikipedia_470";
-path_labels = "./../data/influnet/csv";
+path_features = "./../data/wikipedia"
+path_labels = "./../data/influnet/csv"
+keywords = "../data/keywords/keywords.txt"
 
-def generate_features(year_a, year_b):
+def generate_keywords():
+    selected_columns = []
+    file_ = open(keywords, "r")
+    for line in file_:
+        if line != "Week":
+            selected_columns.append(line.replace("\n", "").replace("\\", ""))
+    return selected_columns
+
+def generate_features(year_a, year_b, number_a, number_b):
     if not year_a.empty:
-        first_part= year_a.copy()[41:52]
+        if (number_a != 2007):
+            first_part= year_a.copy()[41:52]
+        else:
+            first_part= year_a.copy()[48:52]
     else:
         first_part = pd.DataFrame()
-    if not year_b.empty:
+    if not year_b.empty and number_b != 2007:
         second_part= year_b.copy()[0:15]
     else:
         second_part = pd.DataFrame()
@@ -38,7 +50,7 @@ def generate(stop_year):
 
     for i in range(0, len(file_list)-1):
         # If the file's year is equal than stop_year then do anything
-        if int(file_list[i].replace(".csv", "")) != stop_year-1 and int(file_list[i].replace(".csv", "")) != 2007:
+        if int(file_list[i].replace(".csv", "")) != stop_year-1:
             tmp_a = pd.read_csv(os.path.join(path_features, file_list[i]), encoding = 'utf8', delimiter=',')
         else:
             tmp_a = pd.DataFrame()
@@ -51,9 +63,9 @@ def generate(stop_year):
         # If the dataset is empty the generate a new dataframe.
         # Append a new dataframe if the dataset is not empty.
         if dataset.empty:
-            dataset = generate_features(tmp_a, tmp_b)
+            dataset = generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", "")))
         else:
-            dataset = dataset.append(generate_features(tmp_a, tmp_b))
+            dataset = dataset.append(generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", ""))))
 
     return dataset
 
@@ -65,7 +77,7 @@ def generate_one_year(year):
     file_list.sort()
 
     for i in range(0, len(file_list)-1):
-        if int(file_list[i].replace(".csv", "")) == year-1 and int(file_list[i].replace(".csv", "")) != 2007:
+        if int(file_list[i].replace(".csv", "")) == year-1:
             tmp_a = pd.read_csv(os.path.join(path_features, file_list[i]), encoding = 'utf8', delimiter=',')
         else:
             tmp_a = pd.DataFrame()
@@ -78,9 +90,9 @@ def generate_one_year(year):
         # If the dataset is empty the generate a new dataframe.
         # Append a new dataframe if the dataset is not empty.
         if dataset.empty:
-            dataset = generate_features(tmp_a, tmp_b)
+            dataset = generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", "")))
         else:
-            dataset = dataset.append(generate_features(tmp_a, tmp_b))
+            dataset = dataset.append(generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", ""))))
     return dataset
 
 def generate_labels(stop_year):
@@ -97,8 +109,11 @@ def generate_labels(stop_year):
 
             # Append data without the stop year
             years = file_list[i].replace("tabula-", "").split("_")
-            if int(years[1].replace(".csv", "")) != stop_year and int(years[0]) != 2007:
-                dataset = dataset.append(_file[0:11])
+            if int(years[1].replace(".csv", "")) != stop_year:
+                if int(years[0]) == 2007:
+                    dataset = dataset.append(_file[7:11])
+                else:
+                    dataset = dataset.append(_file[0:11])
             if int(years[0]) != stop_year-1:
                 dataset = dataset.append(_file[11:26])
     return dataset
@@ -117,12 +132,36 @@ def generate_labels_one_year(stop_year):
 
             # Append data without the stop year
             years = file_list[i].replace("tabula-", "").split("_")
-            if int(years[1].replace(".csv", "")) == stop_year and int(years[0]) != 2007:
-                dataset = dataset.append(_file[0:11])
+            if int(years[1].replace(".csv", "")) == stop_year:
+                if int(years[0]) == 2007:
+                    dataset = dataset.append(_file[7:11])
+                else:
+                    dataset = dataset.append(_file[0:11])
             if int(years[0]) == stop_year-1:
                 dataset = dataset.append(_file[11:26])
 
     return dataset
+
+def standardize_data(train, test):
+    data_total = np.concatenate((train, test), axis=0)
+    dmean = data_total.mean(axis=0)
+    dmax = data_total.max(axis=0)
+    dmin = data_total.min(axis=0)
+    dmax_min = dmax - dmin
+    dataset_imp = (train - dmean) / dmax_min
+    data_imp = (test - dmean) / dmax_min
+    dataset_imp[np.isnan(dataset_imp)] = 0
+    data_imp[np.isnan(data_imp)] = 0
+    return (dataset_imp, data_imp)
+
+def stz(data):
+    dmean = data.mean(axis=0)
+    dmax = data.max(axis=0)
+    dmin = data.min(axis=0)
+    dmax_min = dmax - dmin
+    dataset_imp = (data - dmin) / dmax_min
+    dataset_imp[np.isnan(dataset_imp)] = 0
+    return dataset_imp
 
 def sort_cv(item):
     return item[2]
