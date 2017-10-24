@@ -10,18 +10,20 @@ export input=''
 export output=''
 export regexp=''
 export exp=''
+export language=''
 export pages=''
 export debug=false
 
 # Usage and version information
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: parse_dumps (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [--debug]
+Usage: parse_dumps (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [-l <language>] [--debug]
 
 Options:
 	-k <pages>		File containing the keywords which will be used.
 	-e <exp>		File containing the custom generated regexp.
 	-i <input>		Specify input directory (default is ./input).
 	-o <output>		Specify output directory (default is ./output).
+	-l <language>		The language of Wikipedia dumps we want to monitor (two letters)
 	--debug			Run with debug option.
 	--help			Show help options.
 	--version		Print program version.
@@ -49,7 +51,7 @@ function print_debug {
 function generate_regexp {
 
 	# Set up project id, keywords and other field
-	project="it"
+	project=${2:-}
 	keywords=(`cat ${1:-}`)
 	other=' .'
 
@@ -82,9 +84,10 @@ function parse_files {
 
 }
 
-# Add default values if -i or -o were not set
+# Add default values if -i, -l, -o were not set
 if [ -z $input ]; then input='./input'; fi
 if [ -z $output ]; then output='./output'; fi
+if [ -z $language ]; then language='it'; fi
 
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
@@ -100,7 +103,7 @@ fi
 
 # Read the regexp which will be used
 if [ -z $exp ]; then
-	generate_regexp $pages
+	generate_regexp $pages $language
 else
 	regexp=`cat $exp`
 fi
