@@ -3,3 +3,5 @@ output
 scripts
 *.test
 .idea
+ignore
+__pycache__

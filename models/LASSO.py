@@ -37,10 +37,15 @@ selected_columns = generate_keywords()
 
 # Data generation from data files
 dataset = generate(year_selected)[selected_columns]
-labels = generate_labels(year_selected)["Incidenza Totale"]
+labels = generate_labels(year_selected)["incidence"].fillna(0)
 data = generate_one_year(year_selected)[selected_columns]
-labels_test = generate_labels_one_year(year_selected)["Incidenza Totale"]
-weeks = generate_labels_one_year(year_selected)["Settimana"]
+labels_test = generate_labels_one_year(year_selected)["incidence"].fillna(0)
+weeks = generate_labels_one_year(year_selected)["week"]
+
+# Save dataset used to file
+#dataset.to_csv("dataset.csv")
+#labels.to_csv("labels.csv")
+#data.to_csv("test.csv")
 
 print("------------")
 print(year_selected)
@@ -51,8 +56,8 @@ print("------------")
 
 # Create a copy of the dataset where we fills NaN values
 # with 0.
-dataset_zero = dataset.fillna(0);
-data_zero = data.fillna(0);
+dataset_zero = dataset.fillna(0)
+data_zero = data.fillna(0)
 
 # Standardize data
 train, test = standardize_data(dataset_zero, data_zero)
@@ -96,9 +101,15 @@ index_picco_m = np.argmax(model_results)
 print("Picco Influenzale:", weeks[index_picco])
 print("Picco Influenzale Modello: ", weeks[index_picco_m])
 print("Valore Picco: ", labels_test[index_picco])
-print("Valore Piccoo Modello: ", model_results[index_picco_m])
+print("Valore Picco Modello: ", model_results[index_picco_m])
 print("------------")
 print()
+# Print Pearson Coefficient
+#print("------------")
+#print(model_results)
+#print(np.corrcoef(np.repeat(model_results, 4, axis=1), important_pages[0:5], rowvar=False))
+#print("------------")
+
 
 # Plot some informations
 font = {'size': 18}
@@ -115,7 +126,7 @@ plt.plot(range(0, len(model_results)), model_results, 'd-', label="Lasso Model (
 plt.plot(range(0, len(labels_test)), labels_test, 'x-', label="Incidenza ILI")
 
 lgd = plt.legend(loc=1, borderaxespad=0.)
-plt.margins(0.2)
+plt.grid()
 plt.subplots_adjust(bottom=0.15)
 plt.savefig(str(year_selected)+".png", bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=200)
 
