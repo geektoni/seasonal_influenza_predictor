@@ -12,9 +12,9 @@ from sklearn.model_selection import cross_val_score
 ##### UTILITIES #######
 
 #  Feature path and labels
-path_features = "./../data/wikipedia"
-path_labels = "./../data/influnet/csv"
-keywords = "../data/keywords/keywords.txt"
+path_features = "./../data/wikipedia_germany"
+path_labels = "./../data/germany"
+keywords = "../data/keywords/keywords_germany.txt"
 
 def generate_keywords():
     selected_columns = []
@@ -108,7 +108,7 @@ def generate_labels(stop_year):
             _file = pd.read_csv(os.path.join(path_labels, file_list[i]))
 
             # Append data without the stop year
-            years = file_list[i].replace("tabula-", "").split("_")
+            years = file_list[i].split("_")
             if int(years[1].replace(".csv", "")) != stop_year:
                 if int(years[0]) == 2007:
                     dataset = dataset.append(_file[7:11])
@@ -159,7 +159,7 @@ def stz(data):
     dmax = data.max(axis=0)
     dmin = data.min(axis=0)
     dmax_min = dmax - dmin
-    dataset_imp = (data - dmin) / dmax_min
+    dataset_imp = (data - dmean) / dmax_min
     dataset_imp[np.isnan(dataset_imp)] = 0
     return dataset_imp
 
@@ -176,3 +176,16 @@ def cross_validation_glm(dataset, labels, data_imp, labels_test, runs=100):
         values.append([alphas[i], model.copy(), score])
     values = sorted(values, key=sort_cv)
     return values
+
+
+def getKey(item):
+    return item[1]
+
+def get_important_pages(important_pages, top=10):
+    imp_pages_avg = dict((k, sum(v) / float(len(v))) for k, v in important_pages.items())
+    _terms_avg_top = sorted(sorted(imp_pages_avg.items(),
+                                   key=lambda value: value[0]),
+                            key=lambda value: value[1],
+                            reverse=True
+                            )
+    return _terms_avg_top[0:top]
