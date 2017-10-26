@@ -36,7 +36,7 @@ def generate_features(year_a, year_b, number_a, number_b):
 
 # Generate feature list from the files. It takes also
 # a year which will be not included.
-def generate(stop_year, path_features="./../data/wikipedia_italy"):
+def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -64,7 +64,7 @@ def generate(stop_year, path_features="./../data/wikipedia_italy"):
 
     return dataset
 
-def generate_one_year(year, path_features="./../data/wikipedia_italy"):
+def generate_one_year(year, path_features="./../data/wikipedia_italy/new_data"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -90,7 +90,7 @@ def generate_one_year(year, path_features="./../data/wikipedia_italy"):
             dataset = dataset.append(generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", ""))))
     return dataset
 
-def generate_labels(stop_year, path_labels="./../data/italy"):
+def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -113,7 +113,7 @@ def generate_labels(stop_year, path_labels="./../data/italy"):
                 dataset = dataset.append(_file[11:26])
     return dataset
 
-def generate_labels_one_year(stop_year, path_labels="./../data/italy"):
+def generate_labels_one_year(stop_year, path_labels="./../data/italy/new_data"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -142,7 +142,7 @@ def generate_labels_sum():
     file_list = os.listdir("./../data/austria")
     file_list.sort()
     for i in range(0, len(file_list)):
-        _file = pd.read_csv(os.path.join(path_labels, file_list[i]))
+        _file = pd.read_csv(os.path.join("./../data/austria", file_list[i]))
         _file_2 = pd.read_csv(os.path.join("./../data/germany", file_list[i]))
         total = pd.DataFrame()
         total['week'] = _file['week']
