@@ -41,8 +41,13 @@ using_poisson = False
 if (arguments["--p"]):
     using_poisson = True
 
+# Feature path and labels
+path_features = "./../data/wikipedia_germany"
+path_labels = "./../data/austria"
+keywords = "../data/keywords/keywords_germany.txt"
+
 # Selected columns that will be extracted from the dataframes
-selected_columns = generate_keywords()
+selected_columns = generate_keywords(keywords)
 
 ##### ALGORITHM ######
 
@@ -58,11 +63,11 @@ for year_selected in range(year_sel[0], year_sel[1]):
 
     print("[*] ", year_selected )
     # Data generation from data files
-    dataset = generate(year_selected)[selected_columns]
-    labels = generate_labels(year_selected)
-    data = generate_one_year(year_selected)[selected_columns]
-    labels_test = generate_labels_one_year(year_selected)
-    weeks = generate_labels_one_year(year_selected)["week"]
+    dataset = generate(year_selected, path_features)[selected_columns]
+    labels = generate_labels(year_selected, path_labels)
+    data = generate_one_year(year_selected, path_features)[selected_columns]
+    labels_test = generate_labels_one_year(year_selected, path_labels)
+    weeks = labels_test["week"]
 
     # Create a copy of the dataset where we fills NaN values
     # with 0.
@@ -176,12 +181,3 @@ plt.legend(fontsize=16, loc="best")
 plt.tight_layout()
 
 plt.savefig("appendix_linear_feature_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
-
-# Write information to file
-#with open(str(year_selected)+"_information.csv", 'w', newline='') as csvfile:
-#    spamwriter = csv.writer(csvfile, delimiter=',',
-#                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#    spamwriter.writerow(['mse', mean_squared_error(labels_test, result)])
-#    spamwriter.writerow(['alpha', mean_squared_error(labels_test, result)])
-#    for p in important_pages:
-#        spamwriter.writerow([p[0], p[1]])

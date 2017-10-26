@@ -11,12 +11,7 @@ from sklearn.model_selection import cross_val_score
 
 ##### UTILITIES #######
 
-#  Feature path and labels
-path_features = "./../data/wikipedia_germany"
-path_labels = "./../data/germany"
-keywords = "../data/keywords/keywords_germany.txt"
-
-def generate_keywords():
+def generate_keywords(keywords = "../data/keywords/keywords_italy.txt"):
     selected_columns = []
     file_ = open(keywords, "r")
     for line in file_:
@@ -41,7 +36,7 @@ def generate_features(year_a, year_b, number_a, number_b):
 
 # Generate feature list from the files. It takes also
 # a year which will be not included.
-def generate(stop_year):
+def generate(stop_year, path_features="./../data/wikipedia_italy"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -69,7 +64,7 @@ def generate(stop_year):
 
     return dataset
 
-def generate_one_year(year):
+def generate_one_year(year, path_features="./../data/wikipedia_italy"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -95,7 +90,7 @@ def generate_one_year(year):
             dataset = dataset.append(generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", ""))))
     return dataset
 
-def generate_labels(stop_year):
+def generate_labels(stop_year, path_labels="./../data/italy"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -118,7 +113,7 @@ def generate_labels(stop_year):
                 dataset = dataset.append(_file[11:26])
     return dataset
 
-def generate_labels_one_year(stop_year):
+def generate_labels_one_year(stop_year, path_labels="./../data/italy"):
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -141,6 +136,18 @@ def generate_labels_one_year(stop_year):
                 dataset = dataset.append(_file[11:26])
 
     return dataset
+
+def generate_labels_sum():
+    # Get all features files and sort the list
+    file_list = os.listdir("./../data/austria")
+    file_list.sort()
+    for i in range(0, len(file_list)):
+        _file = pd.read_csv(os.path.join(path_labels, file_list[i]))
+        _file_2 = pd.read_csv(os.path.join("./../data/germany", file_list[i]))
+        total = pd.DataFrame()
+        total['week'] = _file['week']
+        total['incidence'] = _file['incidence'] + _file_2['incidence']
+        total.to_csv(file_list[i])
 
 def standardize_data(train, test):
     data_total = np.concatenate((train, test), axis=0)
