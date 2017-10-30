@@ -12,6 +12,15 @@ from sklearn.model_selection import cross_val_score
 ##### UTILITIES #######
 
 def generate_keywords(keywords = "../data/keywords/keywords_italy.txt"):
+    """
+    Generate a list of keywords (Wikipedia's pages) which are used to
+    select the columns of the dataframe we are going to use as dataset
+    to train our model.
+
+    :param keywords: the path to a file containing \n separated Wikipedia's
+    page names.
+    :return: a keyword list.
+    """
     selected_columns = []
     file_ = open(keywords, "r")
     for line in file_:
@@ -34,9 +43,22 @@ def generate_features(year_a, year_b, number_a, number_b):
 
     return first_part.append(second_part)
 
-# Generate feature list from the files. It takes also
-# a year which will be not included.
+
 def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
+    """
+    Generate a dataframe with as columns the Wikipedia's pages and as rows
+    the number of pageviews for each week and for each page. The dataframe
+    contains all the influenza season without the one specified by stop_year.
+
+    :param stop_year: The influenza seasosn which will not be inserted into
+    the final dataframe.
+    :param path_features: the path to the directory containing all the files
+    with the data.
+    :return: a dataframe containing all influenza season, which can be used to
+    train the model.
+    """
+
+    # Generate an empty dataframe
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -65,6 +87,17 @@ def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
     return dataset
 
 def generate_one_year(year, path_features="./../data/wikipedia_italy/new_data"):
+    """
+    Generate a dataframe containing the data of only one influenza season.
+    The dataframe contains, for each week, the pageview of a each Wikipedia's page
+    of the dataset.
+
+    :param year: the year we want to generate the dataset of.
+    :param path_features: the path where the data files are store.
+    :return: a dataframe which can be used to validate the trained model.
+    """
+
+    # Generate an empty dataframe
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -90,7 +123,17 @@ def generate_one_year(year, path_features="./../data/wikipedia_italy/new_data"):
             dataset = dataset.append(generate_features(tmp_a, tmp_b, int(file_list[i].replace(".csv", "")), int(file_list[i+1].replace(".csv", ""))))
     return dataset
 
+
 def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
+    """
+    Generate a dataframe with all the ILI incidence data for every influenza
+    season, except for the one specified by stop_year.
+
+    :param stop_year: the influenza season we want to exclude.
+    :param path_labels: the path to the data files which store the incidence data.
+    :return: a dataframe containing, for each week, the incidence value.
+    """
+
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -114,6 +157,13 @@ def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
     return dataset
 
 def generate_labels_one_year(stop_year, path_labels="./../data/italy/new_data"):
+    """
+    Generate a dataframe with the incidence data for a single influenza season.
+
+    :param stop_year: the influenza season we want to get the data of.
+    :param path_labels: the path to the files which store the incidence data.
+    :return: a dataframe containing the incidence value for the specified influenza seasons.
+    """
     dataset = pd.DataFrame()
 
     # Get all features files and sort the list
@@ -150,6 +200,16 @@ def generate_labels_sum():
         total.to_csv(file_list[i])
 
 def standardize_data(train, test):
+    """
+    Standardize between [-1, 1] the train and test set by applying this
+    formula for each feature:
+
+    x_new = (x-dataset_mean)/(dataset_max - dataset_min)
+
+    :param train: the training dataset (represented with a Pandas dataframe).
+    :param test: the testing dataset (represented with a Pandas dataframe).
+    :return: the train and test dataset standardized
+    """
     data_total = np.concatenate((train, test), axis=0)
     dmean = data_total.mean(axis=0)
     dmax = data_total.max(axis=0)
@@ -162,6 +222,15 @@ def standardize_data(train, test):
     return (dataset_imp, data_imp)
 
 def stz(data):
+    """
+    Standardize between [-1, 1] the data give by applying this
+    formula to each feature:
+
+    x_new = (x-dataset_mean)/(dataset_max - dataset_min)
+
+    :param data: the data we want to standardize
+    :return: the standardized data
+    """
     dmean = data.mean(axis=0)
     dmax = data.max(axis=0)
     dmin = data.min(axis=0)
@@ -170,25 +239,15 @@ def stz(data):
     dataset_imp[np.isnan(dataset_imp)] = 0
     return dataset_imp
 
-def sort_cv(item):
-    return item[2]
-
-def cross_validation_glm(dataset, labels, data_imp, labels_test, runs=100):
-    values=[]
-    alphas = np.linspace(0.0, 1.0, num=runs)
-    for i in tqdm(range(runs)):
-        model = cvglmnet(x=dataset.copy(), y=labels.copy().as_matrix(), family='poisson', alpha=alphas[i], ptype="mse", parallel=True, nfolds=10)
-        result_model = cvglmnetPredict(model, data_imp, ptype = 'response', s = 'lambda_min')
-        score = mean_squared_error(labels_test, result_model)
-        values.append([alphas[i], model.copy(), score])
-    values = sorted(values, key=sort_cv)
-    return values
-
-
-def getKey(item):
-    return item[1]
-
 def get_important_pages(important_pages, top=10):
+    """
+    Get the most important feature selected by the model.
+
+    :param important_pages: a dictionary with, for each of the features,
+    a list of their weights in each of the models.
+    :param top: how many feature we want to return.
+    :return: the top feauture
+    """
     imp_pages_avg = dict((k, sum(v) / float(len(v))) for k, v in important_pages.items())
     _terms_avg_top = sorted(sorted(imp_pages_avg.items(),
                                    key=lambda value: value[0]),
