@@ -46,7 +46,7 @@ year_end = int(arguments["<year_end>"])+1
 # Model type
 model_type = "Linear Model"
 using_poisson = False
-if (arguments["--p"]):
+if arguments["--p"]:
     using_poisson = True
     model_type="Poisson Model"
 
@@ -127,7 +127,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     total_weeks.extend(weeks)
 
     # If we are verbose print more informations
-    if(arguments["--v"]):
+    if arguments["--v"]:
         index_peak = labels_test['incidence'].fillna(0).idxmax(axis=1)
         index_peak_m = np.argmax(result)
         print("[*] Influenza Season Peak (Week):", labels_test.iloc[index_peak]["week"])
@@ -227,9 +227,10 @@ plt.tight_layout()
 plt.savefig("season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
 
 # If --f then we write some information to file
-with open(str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',',
-                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
-    for p in important_pages:
-        spamwriter.writerow([p[0], float(p[1])])
+if arguments["--f"]:
+    with open(str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
+        for p in important_pages:
+            spamwriter.writerow([p[0], float(p[1])])
