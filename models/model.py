@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -12,12 +12,15 @@ Usage:
   <incidence_path>  The path to the files which specify the ILI levels for each week.
   <keywords_file>   The path to the file which contains the Wikipedia pages used.
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
+  -f, --file        Write informations to file
+  -v, --verbose     Output more informations
   -h, --help        Print this help message
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_squared_error
 from tabulate import tabulate
@@ -72,6 +75,7 @@ year_sel = (year_start, year_end)
 # and predict the ILI incidence.
 for year_selected in range(year_sel[0], year_sel[1]):
 
+    print("------------")
     print("[*] ", year_selected )
 
     # Data generation from data files
@@ -122,6 +126,15 @@ for year_selected in range(year_sel[0], year_sel[1]):
     all_true_labels = all_true_labels.append(labels_test)
     total_weeks.extend(weeks)
 
+    # If we are verbose print more informations
+    if(arguments["--v"]):
+        index_peak = labels_test['incidence'].fillna(0).idxmax(axis=1)
+        index_peak_m = np.argmax(result)
+        print("[*] Influenza Season Peak (Week):", labels_test.iloc[index_peak]["week"])
+        print("[*] Influenza Seasons Predicted Peak (Week): ", labels_test.iloc[index_peak_m]["week"])
+        print("[*] Influenza Season Peak Value: ", labels_test.iloc[index_peak]["incidence"])
+        print("[*] Influenza Season Predicted Peak Value: ", result[index_peak_m])
+        print("------------")
 
 # Get important pages to generate the plot we need
 important_pages = get_important_pages(all_weighted_feature, 5)
@@ -133,11 +146,11 @@ print("------------")
 
 # Print Pearson Coefficient
 print("------------")
-print(np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False))
+print("Pearson Correlation Coeff: ", np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False)[0][1])
 print("------------")
 
 # Print important pages
-print(tabulate(important_pages))
+print(tabulate(important_pages, headers=["Page name", "Weight"]))
 
 ###########################
 #### GRAPHS GENERATION ####
@@ -179,7 +192,7 @@ plt.legend(fontsize=16, loc="upper right")
 plt.tight_layout()
 
 # Save the graph on file
-plt.savefig("appendix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+plt.savefig("season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
 
 # Feature plot
 figf = plt.figure(4, figsize=(15, 6))
@@ -211,4 +224,12 @@ plt.legend(fontsize=16, loc="best")
 plt.tight_layout()
 
 # Save again the graph on file
-plt.savefig("appendix_features_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+plt.savefig("season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
+
+# If --f then we write some information to file
+with open(str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
+    for p in important_pages:
+        spamwriter.writerow([p[0], float(p[1])])
