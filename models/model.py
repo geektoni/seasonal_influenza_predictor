@@ -1,25 +1,27 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Machine learning model which uses Wikipedia data to predicts ILI levels.
-Usage:
-  model.py <year_start> <year_end> [--p]
+"""Machine learning model which uses Wikipedia data to predicts ILI levels.
 
-Options:
-  -p, --poisson Use the poisson model + LASSO
-  -h, --help
+Usage:
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p]
+
+  <year_start>      The first influenza season we want to predict.
+  <year_end>        The last influenza season we want to predict.
+  <dataset_path>    The path to dataset files (the ones which contain Wikipedia pageviews).
+  <incidence_path>  The path to the files which specify the ILI levels for each week.
+  <keywords_file>   The path to the file which contains the Wikipedia pages used.
+  -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
+  -h, --help        Print this help message
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
-from sklearn.linear_model import LassoCV, LassoLarsCV
+from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_squared_error
 from tabulate import tabulate
-from colour import Color
 from docopt import docopt
-import csv
 
 from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages
 
@@ -27,7 +29,9 @@ from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
 from cvglmnet import cvglmnet
 
+#########################
 #### INITIALIZATION #####
+#########################
 
 # Parse the command line
 arguments = docopt(__doc__)
@@ -37,19 +41,19 @@ year_start = int(arguments["<year_start>"])
 year_end = int(arguments["<year_end>"])+1
 
 # Model type
+model_type = "Linear Model"
 using_poisson = False
 if (arguments["--p"]):
     using_poisson = True
+    model_type="Poisson Model"
 
 # Feature path and labels
-path_features = "./../data/wikipedia_germany"
-path_labels = "./../data/austria"
-keywords = "../data/keywords/keywords_germany.txt"
+path_features = arguments["<dataset_path>"]
+path_labels = arguments["<incidence_path>"]
+keywords = arguments["<keywords_file>"]
 
 # Selected columns that will be extracted from the dataframes
 selected_columns = generate_keywords(keywords)
-
-##### ALGORITHM ######
 
 all_features_values = pd.DataFrame()
 all_predicted_values = []
@@ -57,11 +61,19 @@ all_true_labels = pd.DataFrame()
 total_weeks = []
 all_weighted_feature=dict()
 
+# The pair start-end seasons
 year_sel = (year_start, year_end)
 
+######################
+##### ALGORITHM ######
+######################
+
+# For each season, train a model with the complete dataset (without the season)
+# and predict the ILI incidence.
 for year_selected in range(year_sel[0], year_sel[1]):
 
     print("[*] ", year_selected )
+
     # Data generation from data files
     dataset = generate(year_selected, path_features)[selected_columns]
     labels = generate_labels(year_selected, path_labels)
@@ -76,9 +88,6 @@ for year_selected in range(year_sel[0], year_sel[1]):
 
     # Standardize data
     train, test = standardize_data(dataset_zero, data_zero)
-
-    # Regenerate panda dataframe with standardized data
-    data_graph = pd.DataFrame(data=test, columns=selected_columns)
 
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced
@@ -119,7 +128,7 @@ important_pages = get_important_pages(all_weighted_feature, 5)
 
 # Print MSE of the two models
 print("------------")
-print("LASSO XVal  General MSE: ", mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values))
+print("MSE: ", mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values))
 print("------------")
 
 # Print Pearson Coefficient
@@ -127,14 +136,24 @@ print("------------")
 print(np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False))
 print("------------")
 
+# Print important pages
+print(tabulate(important_pages))
+
+###########################
+#### GRAPHS GENERATION ####
+###########################
+
 # Plot some informations
 fig = plt.figure(3, figsize=(15, 6))
 ax = fig.add_subplot(111)
 
-plt.title("Stagioni Influenzali "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
-plt.ylabel("Incidenza su 100000 persone", fontsize=17)
-plt.xlabel("Anno-Settimana", fontsize=17)
+# Set up the graph title, x and y axis titles
+plt.title("Influenza Seasons "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
+plt.ylabel("Incidence on 100000 people", fontsize=17)
+plt.xlabel("Year-Week", fontsize=17)
 
+# Generate the x axis labels in such way to
+# have the year-week pair only every two ticks.
 weeks_used = []
 for k, v in enumerate(total_weeks):
     if k%2==0:
@@ -142,11 +161,13 @@ for k, v in enumerate(total_weeks):
     else:
         weeks_used.append(" ")
 
+# Set up the axes ticks
 plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
 plt.yticks(fontsize=15)
 
-plt.plot(range(0, len(all_predicted_values)), all_predicted_values, 'r-', label="Modello Lineare", linewidth=3)
-plt.plot(range(0, len(all_true_labels["incidence"])), all_true_labels["incidence"].fillna(0), 'k-', label="InfluNet", linewidth=3)
+# Plot the model result and the incidence
+plt.plot(range(0, len(all_predicted_values)), all_predicted_values, 'r-', label=model_type, linewidth=3)
+plt.plot(range(0, len(all_true_labels["incidence"])), all_true_labels["incidence"].fillna(0), 'k-', label="Incidence", linewidth=3)
 
 # Add dotted line into the graph to delimit the influenza seasons.
 for i in range(1, (year_sel[1]-year_sel[0])):
@@ -157,27 +178,37 @@ plt.grid()
 plt.legend(fontsize=16, loc="upper right")
 plt.tight_layout()
 
-# Save the grapg on file
-plt.savefig("appendix_linear_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+# Save the graph on file
+plt.savefig("appendix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
 
 # Feature plot
 figf = plt.figure(4, figsize=(15, 6))
 axf = fig.add_subplot(111)
 
-plt.title("Variazione pageview "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
-plt.ylabel("Numero Pageview", fontsize=17)
-plt.xlabel("Anno-Settimana", fontsize=17)
+# Generate the graph showing the pageview variation of the top 5 Wikipedia's pages
+# choosen by the model.
+plt.title("Pageview variation "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
+plt.ylabel("Pageview value", fontsize=17)
+plt.xlabel("Year-Week", fontsize=17)
 
+# Plot the axes labels
 plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
 plt.yticks(fontsize=15)
 
+# Plot all the pageview data and the ILI incidence
 std_all_features_values = stz(all_features_values)
 for key, value in important_pages:
  plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
-plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="InfluNet", linewidth=3)
+plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
 
+# Add dotted line into the graph to delimit the influenza seasons.
+for i in range(1, (year_sel[1]-year_sel[0])):
+    plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
+
+# Update some graphical options
 plt.grid()
 plt.legend(fontsize=16, loc="best")
 plt.tight_layout()
 
-plt.savefig("appendix_linear_feature_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+# Save again the graph on file
+plt.savefig("appendix_features_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
