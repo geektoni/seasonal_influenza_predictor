@@ -1,4 +1,3 @@
-title
 Thomas_Edison
 Douglas_Hofstadter
 Benjamin_Franklin
