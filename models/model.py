@@ -78,9 +78,14 @@ for year_selected in range(year_sel[0], year_sel[1]):
     print("------------")
     print("[*] ", year_selected )
 
+    excluded=[]
+    for i in range(2007, 2018):
+        if i>year_selected:
+            excluded.append(i)
+
     # Data generation from data files
-    dataset = generate(year_selected, path_features)[selected_columns]
-    labels = generate_labels(year_selected, path_labels)
+    dataset = generate(year_selected, excluded, path_features)[selected_columns]
+    labels = generate_labels(year_selected, excluded, path_labels)
     data = generate_one_year(year_selected, path_features)[selected_columns]
     labels_test = generate_labels_one_year(year_selected, path_labels)
     weeks = labels_test["week"]

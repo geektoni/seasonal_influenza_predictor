@@ -44,7 +44,7 @@ def generate_features(year_a, year_b, number_a, number_b):
     return first_part.append(second_part)
 
 
-def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
+def generate(stop_year, exclude, path_features="./../data/wikipedia_italy/new_data"):
     """
     Generate a dataframe with as columns the Wikipedia's pages and as rows
     the number of pageviews for each week and for each page. The dataframe
@@ -57,6 +57,9 @@ def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
     :return: a dataframe containing all influenza season, which can be used to
     train the model.
     """
+
+    # The stop year must not be in the exclude list
+    assert (stop_year not in exclude)
 
     # Generate an empty dataframe
     dataset = pd.DataFrame()
@@ -76,6 +79,10 @@ def generate(stop_year, path_features="./../data/wikipedia_italy/new_data"):
             tmp_b = pd.read_csv(os.path.join(path_features, file_list[i+1]), encoding = 'utf8', delimiter=',')
         else:
             tmp_b = pd.DataFrame()
+
+        # Do not add years which are in the exclude list
+        if int(file_list[i+1].replace(".csv", "")) in exclude:
+            continue
 
         # If the dataset is empty the generate a new dataframe.
         # Append a new dataframe if the dataset is not empty.
@@ -124,7 +131,7 @@ def generate_one_year(year, path_features="./../data/wikipedia_italy/new_data"):
     return dataset
 
 
-def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
+def generate_labels(stop_year, exclude, path_labels="./../data/italy/new_data"):
     """
     Generate a dataframe with all the ILI incidence data for every influenza
     season, except for the one specified by stop_year.
@@ -133,6 +140,9 @@ def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
     :param path_labels: the path to the data files which store the incidence data.
     :return: a dataframe containing, for each week, the incidence value.
     """
+
+    # The stop year must not be in the exclude list
+    assert (stop_year not in exclude)
 
     dataset = pd.DataFrame()
 
@@ -147,6 +157,11 @@ def generate_labels(stop_year, path_labels="./../data/italy/new_data"):
 
             # Append data without the stop year
             years = file_list[i].split("_")
+
+            # Do not add years which are in the exclude list
+            if int(years[1].replace(".csv", "")) in exclude:
+                continue
+
             if int(years[1].replace(".csv", "")) != stop_year:
                 if int(years[0]) == 2007:
                     dataset = dataset.append(_file[7:11])
