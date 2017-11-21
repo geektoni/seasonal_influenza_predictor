@@ -13,24 +13,58 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+input_dir=''
+output_dir=''
+language=''
+keywords_file=''
+start_year=''
+end_year=''
+
+# Usage and version information
+eval "$(docopts -V - -h - : "$@" <<EOF
+Usage: check_all -i <input_dir> -o <output_dir> -l <language> -k <keywords_file> [-s <start_year>] [-e <end_year>]
+
+Options:
+	-i <input>		    Specify input directory.
+	-o <output>		    Specify output directory (default is ./output).
+	-l <language>	    The language of Wikipedia dumps we want to monitor (two letters).
+	-k <keywords_file>  The keyword file.
+	-s <start_year>     Start year of data (default is 2007).
+	-e <end_year>       Last year of data (default is 2016).
+	--help			    Show help options.
+	--version		    Print program version.
+----
+check_all 0.1.0
+Copyright (C) 2017 Giovanni De Toni
+License MIT
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+)"
+
+# Add default value if -o was not set
+if [ -z $output_dir ]; then output_dir='./output'; fi
+if [ -z $start_year ]; then start_year='2007'; fi
+if [ -z $end_year ]; then end_year='2016'; fi
+
 # Directory where all the Wikipedia log are located
 #input_dir="/mnt/fluiddata/cconsonni/pagecounts-new/pagecounts/data/output"
-input_dir="/mnt/fluiddata/cconsonni/pagecounts-new/pageviews/data/output/download/tmp/pagecounts/data/output"
+#input_dir="/mnt/fluiddata/cconsonni/pagecounts-new/pageviews/data/output/download/tmp/pagecounts/data/output"
 
 # Language of Wikipedia pages (like it, nl, de, etc.)
-language="de"
+#language="de"
 
 # Directory where the generated files will be saved
-output_dir="./output"
+#output_dir="./output"
 
 # The keyword file which will be used to filter the Wikipedia logs
-keywords_file="./../data/keywords/keywords_germany.txt"
+#keywords_file="./../data/keywords/keywords_germany.txt"
 
-for year in {2015..2017}
+for year in {$start_year..$end_year}
 do
     if [ $year == 2007 ]; then
-       	#all_files="$input_dir/$year-*"
-       	all_files="$input_dir/output-$year*"
+       	all_files="$input_dir/$year-*"
+       	#all_files="$input_dir/output-$year*"
     else
         #all_files="$input_dir/$year-*/output-*"
     	all_files="$input_dir/output-$year*"
