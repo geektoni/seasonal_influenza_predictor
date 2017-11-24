@@ -149,13 +149,15 @@ for year_selected in range(year_sel[0], year_sel[1]):
 important_pages = get_important_pages(all_weighted_feature, 5)
 
 # Print MSE of the two models
+mse = mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)
 print("------------")
-print("MSE: ", mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values))
+print("MSE: ", mse)
 print("------------")
 
 # Print Pearson Coefficient
+pcc = np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False)[0][1]
 print("------------")
-print("Pearson Correlation Coeff: ", np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False)[0][1])
+print("Pearson Correlation Coeff: ", pcc)
 print("------------")
 
 # Print important pages
