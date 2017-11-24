@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--no-future]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -14,6 +14,8 @@ Usage:
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
   -f, --file        Write informations to file
   -v, --verbose     Output more informations
+  -n, --no-future   Use a different method to train the model (avoid using seasonal influnza which are
+                    later than the one we want to predict)
   -h, --help        Print this help message
 """
 
@@ -78,10 +80,12 @@ for year_selected in range(year_sel[0], year_sel[1]):
     print("------------")
     print("[*] ", year_selected )
 
+    # Generate the list of excluded years
     excluded=[]
-    for i in range(2007, 2018):
-        if i>year_selected:
-            excluded.append(i)
+    if arguments["--no-future"]:
+        for i in range(2007, 2018):
+            if i>year_selected:
+                excluded.append(i)
 
     # Data generation from data files
     dataset = generate(year_selected, excluded, path_features)[selected_columns]
