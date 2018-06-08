@@ -28,7 +28,7 @@ from sklearn.metrics import mean_squared_error
 from tabulate import tabulate
 from docopt import docopt
 
-from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages
+from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages, correlation_matrix
 
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
@@ -245,3 +245,13 @@ if arguments["--f"]:
         spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
         for p in important_pages:
             spamwriter.writerow([p[0], float(p[1])])
+
+# Correlation Matrix
+new_pages=[]
+for p in important_pages:
+    new_pages.append(p[0])
+first = pd.DataFrame(all_features_values[new_pages])
+second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
+first['incidence'] = second
+new_pages.append("Incidence")
+correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, "cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")

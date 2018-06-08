@@ -153,7 +153,7 @@ def generate_labels(stop_year, exclude, path_labels="./../data/italy/new_data"):
     for i in range(0, len(file_list)):
         if (file_list[i] != "tabula-2006_2007.csv"):
             # Read the file
-            _file = pd.read_csv(os.path.join(path_labels, file_list[i]))
+            _file = pd.read_csv(os.path.join(path_labels, file_list[i]), engine="python")
 
             # Append data without the stop year
             years = file_list[i].split("_")
@@ -270,3 +270,26 @@ def get_important_pages(important_pages, top=10):
                             reverse=True
                             )
     return _terms_avg_top[0:top]
+
+def correlation_matrix(df, title, labels, output_name):
+    """
+    Print the correlation matrix from the dataframe given.
+    (Code taken from https://datascience.stackexchange.com/questions/10459/
+    calculation-and-visualization-of-correlation-matrix-with-pandas)
+
+    :param df: dataframe used
+    :param title: the title of the graph
+    :param labels: the labels used for naming rows/columns
+    :return: print on screen the correlation matrix
+    """
+    from matplotlib import pyplot as plt
+
+    fig = plt.figure(10, figsize=(15, 15))
+    ax1 = fig.add_subplot(111)
+    cax = ax1.matshow(df.corr(), vmin=-1, vmax=1)
+    plt.title(title, fontsize=18)
+    ax1.xaxis.set_ticks_position('bottom')
+    plt.xticks(range(0, len(labels)), labels, rotation=45, fontsize=17)
+    plt.yticks(range(0, len(labels)), labels, fontsize=17)
+    fig.colorbar(cax)
+    plt.savefig(output_name, dpi=150)
