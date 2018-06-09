@@ -259,5 +259,7 @@ for p in important_pages:
 first = pd.DataFrame(all_features_values[new_pages])
 second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
 first['incidence'] = second
-new_pages.append("Incidence")
+first = first.loc[:, (first != 0).any(axis=0)]
+new_pages = list(first.columns.values)
+print(first)
 correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
