@@ -14,7 +14,8 @@ Usage:
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
   -f, --file        Write informations to file
   -v, --verbose     Output more informations
-  -n, --no-future   Use a different method to train the model (avoid using seasonal influnza which are
+  -d, --directory   Select a directory in which save your files
+  -n, --no-future   Use a different method to train the model (avoid using seasonal influenza which are
                     later than the one we want to predict)
   -h, --help        Print this help message
 """

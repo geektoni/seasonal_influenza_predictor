@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 
 import glmnet_python
 from cvglmnet import cvglmnet
