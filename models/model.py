@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--no-future]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--d=<directory>] [--no-future]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -40,6 +40,11 @@ from cvglmnet import cvglmnet
 
 # Parse the command line
 arguments = docopt(__doc__)
+
+# Directory where to save files
+save_directory="./"
+if arguments["--d"]:
+    save_directory = arguments["--d"]
 
 # Year selected
 year_start = int(arguments["<year_start>"])
@@ -203,7 +208,7 @@ plt.legend(fontsize=16, loc="upper right")
 plt.tight_layout()
 
 # Save the graph on file
-plt.savefig("season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
 
 # Feature plot
 figf = plt.figure(4, figsize=(15, 6))
@@ -235,11 +240,11 @@ plt.legend(fontsize=16, loc="best")
 plt.tight_layout()
 
 # Save again the graph on file
-plt.savefig("season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
+plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
 
 # If --f then we write some information to file
 if arguments["--f"]:
-    with open(str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
+    with open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
@@ -254,4 +259,4 @@ first = pd.DataFrame(all_features_values[new_pages])
 second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
 first['incidence'] = second
 new_pages.append("Incidence")
-correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, "cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
+correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
