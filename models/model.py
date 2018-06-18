@@ -75,6 +75,13 @@ all_weighted_feature=dict()
 # The pair start-end seasons
 year_sel = (year_start, year_end)
 
+# Useful information which can be written to file
+peaks = []
+predicted_peaks = []
+peaks_value = []
+predicted_peaks_value = []
+mse_seasons = []
+
 ######################
 ##### ALGORITHM ######
 ######################
@@ -141,10 +148,16 @@ for year_selected in range(year_sel[0], year_sel[1]):
     all_true_labels = all_true_labels.append(labels_test)
     total_weeks.extend(weeks)
 
+    mse_seasons.append(mean_squared_error(labels_test['incidence'].fillna(0), result))
+
     # If we are verbose print more informations
+    index_peak = labels_test['incidence'].fillna(0).idxmax(axis=1)
+    index_peak_m = np.argmax(result)
+    peaks.append(labels_test.iloc[index_peak]["week"])
+    predicted_peaks.append(labels_test.iloc[index_peak_m]["week"])
+    peaks_value.append(labels_test.iloc[index_peak]["incidence"])
+    predicted_peaks_value.append(result[index_peak_m])
     if arguments["--v"]:
-        index_peak = labels_test['incidence'].fillna(0).idxmax(axis=1)
-        index_peak_m = np.argmax(result)
         print("[*] Influenza Season Peak (Week):", labels_test.iloc[index_peak]["week"])
         print("[*] Influenza Seasons Predicted Peak (Week): ", labels_test.iloc[index_peak_m]["week"])
         print("[*] Influenza Season Peak Value: ", labels_test.iloc[index_peak]["incidence"])
@@ -248,7 +261,13 @@ if arguments["--f"]:
     with open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        spamwriter.writerow(['real_influenza_peak', peaks])
+        spamwriter.writerow(['predicted_influenza_peak', predicted_peaks])
+        spamwriter.writerow(['real_influenza_peak_value', peaks_value])
+        spamwriter.writerow(['predicted_influenza_peak_value', predicted_peaks_value])
+        spamwriter.writerow(['mse_all_seasons', mse_seasons])
         spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
+        spamwriter.writerow(['pearson', pcc])
         for p in important_pages:
             spamwriter.writerow([p[0], float(p[1])])
 
@@ -261,5 +280,4 @@ second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values
 first['incidence'] = second
 first = first.loc[:, (first != 0).any(axis=0)]
 new_pages = list(first.columns.values)
-print(first)
 correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
