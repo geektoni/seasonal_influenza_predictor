@@ -6,3 +6,4 @@ scripts
 ignore
 __pycache__
 *.png
+*.pyc

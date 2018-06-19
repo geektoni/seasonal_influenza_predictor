@@ -7,8 +7,8 @@ IFS=$'\n\t'
 
 country_list=("italy" "austria" "germany" "netherlands")
 year_lists="./year_lists"
-type_of_data="old_data"
-base_dir="./images"
+type_of_data="new_data"
+base_dir="./files"
 
 # Generate all directories
 for c in ${country_list[@]}
@@ -23,10 +23,11 @@ for c in ${country_list[@]}
 do
     for line in `cat $year_lists/$c.txt`
     do
-        start_year=$(cut -d'-' -f1 <<< $line)
-        end_year=$(cut -d'-' -f2 <<< $line)
-        directory=$base_dir/$c/
-        command="./model.py $start_year $end_year ./../data/wikipedia_$c/$type_of_data ./../data/$c/$type_of_data ./../data/keywords/keywords_$c.txt --f --d $directory"
+		#start_year=$(cut -d'-' -f1 <<< $line)
+		#end_year=$(cut -d'-' -f2 <<< $line)
+        start_year=$line
+		directory=$base_dir/$c/
+        command="./model.py $start_year $start_year ./../data/wikipedia_${c}/$type_of_data ./../data/$c/$type_of_data ./../data/keywords/keywords_${c}.txt --f --d $directory --no-images"
         echo $command
         eval $command
     done
