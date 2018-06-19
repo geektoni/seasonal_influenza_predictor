@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--d=<directory>] [--no-future]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -17,6 +17,7 @@ Usage:
   -d, --directory   Select a directory in which save your files
   -n, --no-future   Use a different method to train the model (avoid using seasonal influenza which are
                     later than the one we want to predict)
+  --no-images       Do not generate any graphs. Print only to screen.
   -h, --help        Print this help message
 """
 
@@ -123,9 +124,9 @@ for year_selected in range(year_sel[0], year_sel[1]):
         model.fit(train, labels["incidence"].fillna(0))
         result = model.predict(test)
     else:
-        model = cvglmnet(x=train.as_matrix().copy(), y=labels["incidence"].fillna(0).copy().as_matrix(), family='poisson', alpha=1.0,
+        model = cvglmnet(x=train.values.copy(), y=labels["incidence"].fillna(0).copy().values, family='poisson', alpha=1.0,
                        ptype="mse", parallel=True, nfolds=10)
-        result = cvglmnetPredict(model, test.as_matrix(), ptype='response', s="lambda_min")
+        result = cvglmnetPredict(model, test.values, ptype='response', s="lambda_min")
         coeff = cvglmnetCoef(model, s="lambda_min")
 
     # Get the feature coefficients
@@ -186,75 +187,91 @@ print(tabulate(important_pages, headers=["Page name", "Weight"]))
 #### GRAPHS GENERATION ####
 ###########################
 
-# Plot some informations
-fig = plt.figure(3, figsize=(15, 6))
-ax = fig.add_subplot(111)
+if not arguments["--no-images"]:
+    # Plot some informations
+    fig = plt.figure(3, figsize=(15, 6))
+    ax = fig.add_subplot(111)
 
-# Set up the graph title, x and y axis titles
-plt.title("Influenza Seasons "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
-plt.ylabel("Incidence on 100000 people", fontsize=17)
-plt.xlabel("Year-Week", fontsize=17)
+    # Set up the graph title, x and y axis titles
+    plt.title("Influenza Seasons "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
+    plt.ylabel("Incidence on 100000 people", fontsize=17)
+    plt.xlabel("Year-Week", fontsize=17)
 
-# Generate the x axis labels in such way to
-# have the year-week pair only every two ticks.
-weeks_used = []
-for k, v in enumerate(total_weeks):
-    if k%2==0:
-        weeks_used.append(v)
-    else:
-        weeks_used.append(" ")
+    # Generate the x axis labels in such way to
+    # have the year-week pair only every two ticks.
+    weeks_used = []
+    for k, v in enumerate(total_weeks):
+        if k%2==0:
+            weeks_used.append(v)
+        else:
+            weeks_used.append(" ")
 
-# Set up the axes ticks
-plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
-plt.yticks(fontsize=15)
+    # Set up the axes ticks
+    plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
+    plt.yticks(fontsize=15)
 
-# Plot the model result and the incidence
-plt.plot(range(0, len(all_predicted_values)), all_predicted_values, 'r-', label=model_type, linewidth=3)
-plt.plot(range(0, len(all_true_labels["incidence"])), all_true_labels["incidence"].fillna(0), 'k-', label="Incidence", linewidth=3)
+    # Plot the model result and the incidence
+    plt.plot(range(0, len(all_predicted_values)), all_predicted_values, 'r-', label=model_type, linewidth=3)
+    plt.plot(range(0, len(all_true_labels["incidence"])), all_true_labels["incidence"].fillna(0), 'k-', label="Incidence", linewidth=3)
 
-# Add dotted line into the graph to delimit the influenza seasons.
-for i in range(1, (year_sel[1]-year_sel[0])):
-    plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
+    # Add dotted line into the graph to delimit the influenza seasons.
+    for i in range(1, (year_sel[1]-year_sel[0])):
+        plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
 
-# Update some graphical options
-plt.grid()
-plt.legend(fontsize=16, loc="upper right")
-plt.tight_layout()
+    # Update some graphical options
+    plt.grid()
+    plt.legend(fontsize=16, loc="upper right")
+    plt.tight_layout()
 
-# Save the graph on file
-plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
+    # Save the graph on file
+    plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png", dpi=150)
 
-# Feature plot
-figf = plt.figure(4, figsize=(15, 6))
-axf = fig.add_subplot(111)
+    # Feature plot
+    figf = plt.figure(4, figsize=(15, 6))
+    axf = figf.add_subplot(111)
 
-# Generate the graph showing the pageview variation of the top 5 Wikipedia's pages
-# choosen by the model.
-plt.title("Pageview variation "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
-plt.ylabel("Pageview value", fontsize=17)
-plt.xlabel("Year-Week", fontsize=17)
+    # Generate the graph showing the pageview variation of the top 5 Wikipedia's pages
+    # choosen by the model.
+    plt.title("Pageview variation "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
+    plt.ylabel("Pageview value", fontsize=17)
+    plt.xlabel("Year-Week", fontsize=17)
 
-# Plot the axes labels
-plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
-plt.yticks(fontsize=15)
+    # Plot the axes labels
+    plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
+    plt.yticks(fontsize=15)
 
-# Plot all the pageview data and the ILI incidence
-std_all_features_values = stz(all_features_values)
-for key, value in important_pages:
- plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
-plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
+    # Plot all the pageview data and the ILI incidence
+    std_all_features_values = stz(all_features_values)
+    for key, value in important_pages:
+     plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
+    plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
 
-# Add dotted line into the graph to delimit the influenza seasons.
-for i in range(1, (year_sel[1]-year_sel[0])):
-    plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
+    # Add dotted line into the graph to delimit the influenza seasons.
+    for i in range(1, (year_sel[1]-year_sel[0])):
+        plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
 
-# Update some graphical options
-plt.grid()
-plt.legend(fontsize=16, loc="best")
-plt.tight_layout()
+    # Update some graphical options
+    plt.grid()
+    plt.legend(fontsize=16, loc="best")
+    plt.tight_layout()
 
-# Save again the graph on file
-plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
+    # Save again the graph on file
+    plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
+
+    # Correlation Matrix
+    new_pages=[]
+    for p in important_pages:
+        new_pages.append(p[0])
+    first = pd.DataFrame(all_features_values[new_pages])
+    second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
+    first['incidence'] = second
+    first = first.loc[:, (first != 0).any(axis=0)]
+    new_pages = list(first.columns.values)
+    correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
+
+###################
+#  SAVE TO FILE   #
+###################
 
 # If --f then we write some information to file
 if arguments["--f"]:
@@ -271,13 +288,3 @@ if arguments["--f"]:
         for p in important_pages:
             spamwriter.writerow([p[0], float(p[1])])
 
-# Correlation Matrix
-new_pages=[]
-for p in important_pages:
-    new_pages.append(p[0])
-first = pd.DataFrame(all_features_values[new_pages])
-second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
-first['incidence'] = second
-first = first.loc[:, (first != 0).any(axis=0)]
-new_pages = list(first.columns.values)
-correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
