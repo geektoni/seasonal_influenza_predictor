@@ -90,6 +90,10 @@ if arguments["--f"]:
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     spamwriter.writerow(['season', 'country', 'predicted_influenza_peak', 'real_influenza_peak', 'predicted_influenza_peak_value', 'real_influenza_peak_value', 'mse', 'pcc'])
 
+    top_features_file = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features_"+arguments["<country_name>"]+".csv", 'w', newline='')
+    top_features_writer = csv.writer(top_features_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    top_features_writer.writerow(['season', 'country', 'page_name', 'value'])
+
 ######################
 ##### ALGORITHM ######
 ######################
@@ -143,12 +147,19 @@ for year_selected in range(year_sel[0], year_sel[1]):
         coeff = cvglmnetCoef(model, s="lambda_min")
 
     # Add the pair (value, coeff) to a dictionary
+    current_weighted_features = dict()
     for i in list(zip(coeff, selected_columns)):
         if (i[0] != 0):
             if all_weighted_feature.get(i[1], None) is None:
                 all_weighted_feature[i[1]] = [i[0]]
             else:
                 all_weighted_feature[i[1]].append(i[0])
+            if current_weighted_features.get(i[1], None) is None:
+                current_weighted_features[i[1]] = [i[0]]
+            else:
+                current_weighted_features[i[1]].append(i[0])
+
+
 
     # Add the value to global variables
     all_features_values= all_features_values.append(data.fillna(0))
@@ -174,7 +185,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
 
     # For each influenza seasons we print data to file
     if arguments["--f"]:
-        spamwriter.writerow([str(year_sel[0]-1)+"-"+str(year_sel[1]-1),
+        spamwriter.writerow([str(year_selected-1)+"-"+str(year_selected),
                              arguments["<country_name>"],
                              labels_test.iloc[index_peak_m]["week"],
                              labels_test.iloc[index_peak]["week"],
@@ -183,6 +194,12 @@ for year_selected in range(year_sel[0], year_sel[1]):
                              mean_squared_error(labels_test['incidence'].fillna(0), result),
                              np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
                              ])
+        for p in get_important_pages(current_weighted_features, 10):
+            top_features_writer.writerow([str(year_selected-1)+"-"+str(year_selected),
+                                          arguments["<country_name>"],
+                                          p[0],
+                                          float(p[1])])
+
 
 
 # Get important pages to generate the plot we need
