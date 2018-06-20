@@ -27,7 +27,7 @@ do
 		end_year=$(cut -d'-' -f2 <<< $line)
 		directory=$base_dir/$c/
         command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$type_of_data ./../data/$c/$type_of_data ./../data/keywords/keywords_${c}.txt --f --d $directory --no-images"
-        command2="./model.py $start_year $end_year ./../data/wikipedia_${c}/$type_of_data ./../data/$c/$type_of_data ./../data/keywords/keywords_${c}.txt --f --d $directory --no-images -no--future"
+        command2="./model.py $((start_year+1)) $end_year ./../data/wikipedia_${c}/$type_of_data ./../data/$c/$type_of_data ./../data/keywords/keywords_${c}.txt --f --d $directory --no-images -no--future"
         echo $command
         eval $command
         echo $command2
