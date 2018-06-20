@@ -86,7 +86,7 @@ mse_seasons = []
 
 # If --f then we write some information to file
 if arguments["--f"]:
-    csvfile = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='')
+    csvfile = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information_"+arguments["<country_name>"]+".csv", 'w', newline='')
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     spamwriter.writerow(['season', 'country', 'predicted_influenza_peak', 'real_influenza_peak', 'predicted_influenza_peak_value', 'real_influenza_peak_value', 'mse', 'pcc'])
 
