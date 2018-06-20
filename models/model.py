@@ -4,13 +4,14 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
   <dataset_path>    The path to dataset files (the ones which contain Wikipedia pageviews).
   <incidence_path>  The path to the files which specify the ILI levels for each week.
   <keywords_file>   The path to the file which contains the Wikipedia pages used.
+  <country_name>    The name of the country we are analyzing
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
   -f, --file        Write informations to file
   -v, --verbose     Output more informations
@@ -82,6 +83,12 @@ predicted_peaks = []
 peaks_value = []
 predicted_peaks_value = []
 mse_seasons = []
+
+# If --f then we write some information to file
+if arguments["--f"]:
+    csvfile = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='')
+    spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    spamwriter.writerow(['season', 'country', 'predicted_influenza_peak', 'real_influenza_peak', 'predicted_influenza_peak_value', 'real_influenza_peak_value', 'mse', 'pcc'])
 
 ######################
 ##### ALGORITHM ######
@@ -164,6 +171,19 @@ for year_selected in range(year_sel[0], year_sel[1]):
         print("[*] Influenza Season Peak Value: ", labels_test.iloc[index_peak]["incidence"])
         print("[*] Influenza Season Predicted Peak Value: ", result[index_peak_m])
         print("------------")
+
+    # For each influenza seasons we print data to file
+    if arguments["--f"]:
+        spamwriter.writerow([str(year_sel[0]-1)+"-"+str(year_sel[1]-1),
+                             arguments["<country_name>"],
+                             labels_test.iloc[index_peak_m]["week"],
+                             labels_test.iloc[index_peak]["week"],
+                             result[index_peak_m],
+                             labels_test.iloc[index_peak]["incidence"],
+                             mean_squared_error(labels_test['incidence'].fillna(0), result),
+                             np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
+                             ])
+
 
 # Get important pages to generate the plot we need
 important_pages = get_important_pages(all_weighted_feature, 5)
@@ -274,17 +294,17 @@ if not arguments["--no-images"]:
 ###################
 
 # If --f then we write some information to file
-if arguments["--f"]:
-    with open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter=',',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(['real_influenza_peak', peaks])
-        spamwriter.writerow(['predicted_influenza_peak', predicted_peaks])
-        spamwriter.writerow(['real_influenza_peak_value', peaks_value])
-        spamwriter.writerow(['predicted_influenza_peak_value', predicted_peaks_value])
-        spamwriter.writerow(['mse_all_seasons', mse_seasons])
-        spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
-        spamwriter.writerow(['pearson', pcc])
-        for p in important_pages:
-            spamwriter.writerow([p[0], float(p[1])])
+#if arguments["--f"]:
+#    with open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information.csv", 'w', newline='') as csvfile:
+#        spamwriter = csv.writer(csvfile, delimiter=',',
+#                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+#        spamwriter.writerow(['real_influenza_peak', peaks])
+#        spamwriter.writerow(['predicted_influenza_peak', predicted_peaks])
+#        spamwriter.writerow(['real_influenza_peak_value', peaks_value])
+#        spamwriter.writerow(['predicted_influenza_peak_value', predicted_peaks_value])
+#        spamwriter.writerow(['mse_all_seasons', mse_seasons])
+#        spamwriter.writerow(['mse', mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)])
+#        spamwriter.writerow(['pearson', pcc])
+#        for p in important_pages:
+#            spamwriter.writerow([p[0], float(p[1])])
 
