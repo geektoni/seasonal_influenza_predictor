@@ -171,11 +171,12 @@ for year_selected in range(year_sel[0], year_sel[1]):
 
     # If we are verbose print more informations
     index_peak = labels_test['incidence'].fillna(0).idxmax(axis=1)
-    index_peak_m = np.argmax(result)
-    peaks.append(labels_test.iloc[index_peak]["week"])
-    predicted_peaks.append(labels_test.iloc[index_peak_m]["week"])
-    peaks_value.append(labels_test.iloc[index_peak]["incidence"])
-    predicted_peaks_value.append(result[index_peak_m])
+    results = pd.DataFrame(result, index=labels_test.index.values, columns=["incidence"])
+    index_peak_m = results["incidence"].idxmax(axis=1)
+    peaks.append(labels_test["week"][index_peak])
+    predicted_peaks.append(labels_test["week"][index_peak_m])
+    peaks_value.append(labels_test["incidence"][index_peak])
+    predicted_peaks_value.append(results["incidence"][index_peak_m])
     if arguments["--v"]:
         print("[*] Influenza Season Peak (Week):", labels_test.iloc[index_peak]["week"])
         print("[*] Influenza Seasons Predicted Peak (Week): ", labels_test.iloc[index_peak_m]["week"])
@@ -187,10 +188,10 @@ for year_selected in range(year_sel[0], year_sel[1]):
     if arguments["--f"]:
         spamwriter.writerow([str(year_selected-1)+"-"+str(year_selected),
                              arguments["<country_name>"],
-                             labels_test.iloc[index_peak_m]["week"],
-                             labels_test.iloc[index_peak]["week"],
-                             result[index_peak_m],
-                             labels_test.iloc[index_peak]["incidence"],
+                             labels_test["week"][index_peak_m],
+                             labels_test["week"][index_peak],
+                             results["incidence"][index_peak_m],
+                             labels_test["incidence"][index_peak],
                              mean_squared_error(labels_test['incidence'].fillna(0), result),
                              np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
                              ])
