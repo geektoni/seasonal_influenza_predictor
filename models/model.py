@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images] [--no-month-year]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -19,6 +19,7 @@ Usage:
   -n, --no-future   Use a different method to train the model (avoid using seasonal influenza which are
                     later than the one we want to predict)
   --no-images       Do not generate any graphs. Print only to screen.
+  --no-month-year   Do not add a month column.
   -h, --help        Print this help message
 """
 
@@ -28,10 +29,11 @@ import matplotlib.pyplot as plt
 import csv
 from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 from tabulate import tabulate
 from docopt import docopt
 
-from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages, correlation_matrix
+from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages, correlation_matrix, add_month
 
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
@@ -67,6 +69,8 @@ keywords = arguments["<keywords_file>"]
 
 # Selected columns that will be extracted from the dataframes
 selected_columns = generate_keywords(keywords)
+if not arguments["--no-month-year"]:
+    selected_columns = selected_columns + ["year", "month"]
 
 all_features_values = pd.DataFrame()
 all_predicted_values = []
@@ -113,9 +117,9 @@ for year_selected in range(year_sel[0], year_sel[1]):
                 excluded.append(i)
 
     # Data generation from data files
-    dataset = generate(year_selected, excluded, path_features)[selected_columns]
+    dataset = generate(year_selected, excluded, path_features)
     labels = generate_labels(year_selected, excluded, path_labels)
-    data = generate_one_year(year_selected, path_features)[selected_columns]
+    data = generate_one_year(year_selected, path_features)
     labels_test = generate_labels_one_year(year_selected, path_labels)
     weeks = labels_test["week"]
 
@@ -124,8 +128,15 @@ for year_selected in range(year_sel[0], year_sel[1]):
     dataset_zero = dataset.fillna(0)
     data_zero = data.fillna(0)
 
+    # Split year week into two elements and generate month column
+    if not arguments["--no-month-year"]:
+        dataset_zero["year"], dataset_zero["week"] = dataset_zero["Week"].str.split('-',1).str
+        data_zero["year"], data_zero["week"] = data_zero["Week"].str.split('-',1).str
+        dataset_zero = add_month(dataset_zero)
+        data_zero = add_month(data_zero)
+
     # Standardize data
-    train, test = standardize_data(dataset_zero, data_zero)
+    train, test = standardize_data(dataset_zero[selected_columns], data_zero[selected_columns])
 
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced
@@ -160,9 +171,8 @@ for year_selected in range(year_sel[0], year_sel[1]):
                 current_weighted_features[i[1]].append(i[0])
 
 
-
     # Add the value to global variables
-    all_features_values= all_features_values.append(data.fillna(0))
+    all_features_values= all_features_values.append(data_zero)
     all_predicted_values.extend(result)
     all_true_labels = all_true_labels.append(labels_test)
     total_weeks.extend(weeks)
@@ -209,6 +219,12 @@ important_pages = get_important_pages(all_weighted_feature, 5)
 mse = mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)
 print("------------")
 print("MSE: ", mse)
+print("------------")
+
+# Print R squared
+r2 = r2_score(all_true_labels["incidence"].fillna(0), all_predicted_values)
+print("------------")
+print("R^2: ", r2)
 print("------------")
 
 # Print Pearson Coefficient

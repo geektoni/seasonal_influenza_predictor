@@ -292,3 +292,18 @@ def correlation_matrix(df, title, labels, output_name):
     plt.yticks(range(0, len(labels)), labels, fontsize=17)
     fig.colorbar(cax)
     plt.savefig(output_name, dpi=150)
+
+def add_month(dataset_zero):
+    """
+    Add a month column to the dataset
+    :param dataset_zero: the original dataset, it must have a two column, one named
+    year and the other named week
+    :return: dataframe with added month column and removed week column
+    """
+    dataset_zero["week"] = dataset_zero["week"].apply(pd.to_numeric)
+    dataset_zero["year"] = dataset_zero["year"].apply(pd.to_numeric)
+    dataset_zero["full_date"] = pd.to_datetime(dataset_zero.year.astype(str), format='%Y') + \
+                                pd.to_timedelta(dataset_zero.week.mul(7).astype(str) + ' days')
+    dataset_zero["month"] = pd.DatetimeIndex(dataset_zero['full_date']).month
+    dataset_zero = dataset_zero.drop(["full_date", "week"], axis=1)
+    return dataset_zero
