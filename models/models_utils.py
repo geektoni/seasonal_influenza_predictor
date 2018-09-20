@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 
+from itertools import chain
+
 import glmnet_python
 from cvglmnet import cvglmnet
 from cvglmnetPredict import cvglmnetPredict
@@ -213,6 +215,40 @@ def generate_labels_sum():
         total['incidence'] = _file['incidence'] + _file_2['incidence']
         total.to_csv(file_list[i])
 
+def standardize_data_week(train, test):
+    """
+    Standardize between [-1, 1] the train and test set by applying this
+    formula for each feature:
+
+    x_new = (x-dataset_mean)/(dataset_max - dataset_min)
+
+    :param train: the training dataset (represented with a Pandas dataframe).
+    :param test: the testing dataset (represented with a Pandas dataframe).
+    :return: the train and test dataset standardized
+    """
+    data_total = pd.concat([train, test], ignore_index=True).drop(["Week"], axis=1)
+    train_tmp = train.copy().drop(["Week"], axis=1)
+    test_tmp = test.copy().drop(["Week"], axis=1)
+
+    first_weeks = range(42, 53)
+    last_weeks = range(1, 16)
+    for week_n in chain(first_weeks, last_weeks):
+        dmean = data_total[data_total.week == week_n].drop(["week", "year"], axis=1).mean(axis=0)
+        dmax = data_total[data_total.week == week_n].drop(["week", "year"], axis=1).max(axis=0)
+        dmin = data_total[data_total.week == week_n].drop(["week", "year"], axis=1).min(axis=0)
+        dmax_min = dmax - dmin
+        train_tmp[train_tmp.week == week_n] = (train_tmp[train_tmp.week == week_n] - dmean) / dmax_min
+        test_tmp[test_tmp.week == week_n] = (test_tmp[test_tmp.week == week_n] - dmean) / dmax_min
+        train_tmp = train_tmp.fillna(0)
+        test_tmp = test_tmp.fillna(0)
+
+    train_tmp["year"] = train["year"]
+    train_tmp["month"] = train["month"]
+    test_tmp["month"] = test["month"]
+    test_tmp["year"] = test["year"]
+
+    return train_tmp.drop(["week"], axis=1), test_tmp.drop(["week"], axis=1)
+
 def standardize_data(train, test):
     """
     Standardize between [-1, 1] the train and test set by applying this
@@ -224,16 +260,25 @@ def standardize_data(train, test):
     :param test: the testing dataset (represented with a Pandas dataframe).
     :return: the train and test dataset standardized
     """
-    data_total = np.concatenate((train, test), axis=0)
+    data_total = pd.concat([train, test], ignore_index=True).drop(["Week"], axis=1)
+    train_tmp = train.copy().drop(["Week"], axis=1)
+    test_tmp = test.copy().drop(["Week"], axis=1)
+
     dmean = data_total.mean(axis=0)
     dmax = data_total.max(axis=0)
     dmin = data_total.min(axis=0)
     dmax_min = dmax - dmin
-    dataset_imp = (train - dmean) / dmax_min
-    data_imp = (test - dmean) / dmax_min
-    dataset_imp[np.isnan(dataset_imp)] = 0
-    data_imp[np.isnan(data_imp)] = 0
-    return (dataset_imp, data_imp)
+    train_tmp = (train_tmp - dmean) / dmax_min
+    test_tmp = (test_tmp - dmean) / dmax_min
+    train_tmp = train_tmp.fillna(0)
+    test_tmp = test_tmp.fillna(0)
+
+    train_tmp["year"] = train["year"]
+    train_tmp["month"] = train["month"]
+    test_tmp["month"] = test["month"]
+    test_tmp["year"] = test["year"]
+
+    return train_tmp.drop(["week"], axis=1), test_tmp.drop(["week"], axis=1)
 
 def stz(data):
     """
@@ -300,10 +345,8 @@ def add_month(dataset_zero):
     year and the other named week
     :return: dataframe with added month column and removed week column
     """
-    dataset_zero["week"] = dataset_zero["week"].apply(pd.to_numeric)
-    dataset_zero["year"] = dataset_zero["year"].apply(pd.to_numeric)
     dataset_zero["full_date"] = pd.to_datetime(dataset_zero.year.astype(str), format='%Y') + \
                                 pd.to_timedelta(dataset_zero.week.mul(7).astype(str) + ' days')
     dataset_zero["month"] = pd.DatetimeIndex(dataset_zero['full_date']).month
-    dataset_zero = dataset_zero.drop(["full_date", "week"], axis=1)
+    dataset_zero = dataset_zero.drop(["full_date"], axis=1)
     return dataset_zero
