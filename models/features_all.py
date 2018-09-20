@@ -27,11 +27,17 @@ if __name__ == '__main__':
     for infile in arguments['FILE']:
 
         # first four letters of filename are the year
-        year = int(os.path.basename(infile)[0:4])
+        #year = int(os.path.basename(infile)[0:4])
 
         with open(infile, newline='') as csvfile:
-          files_dict[year] = dict((el[0], float(el[1]))
-                                   for el in csv.reader(csvfile))
+            reader = csv.reader(csvfile)
+            next(reader, None) # Skip header file
+            for el in reader:
+                year = el[0][5:9]
+                if files_dict.get(year, None) is None:
+                    files_dict[year] = dict([(el[2], float(el[3]))])
+                else:
+                    files_dict[year][el[2]]=float(el[3])
 
     terms = dict()
     for year, data in files_dict.items():
