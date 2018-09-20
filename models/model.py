@@ -224,7 +224,7 @@ complete_data["prediction"] = pd.Series(all_predicted_values, index=complete_dat
 complete_data.to_csv(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"-prediction.csv", index=False)
 
 # Get important pages to generate the plot we need
-important_pages = get_important_pages(all_weighted_feature, 5)
+important_pages = get_important_pages(all_weighted_feature, 10)
 
 # Print MSE of the two models
 mse = mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)
@@ -305,7 +305,7 @@ if not arguments["--no-images"]:
     plt.yticks(fontsize=15)
 
     # Plot all the pageview data and the ILI incidence
-    std_all_features_values = stz(all_features_values)
+    std_all_features_values = stz(all_features_values[selected_columns])
     for key, value in important_pages:
      plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
     plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
