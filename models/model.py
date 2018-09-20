@@ -142,7 +142,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
         data_zero = add_month(data_zero)
 
     # Standardize data
-    train, test = standardize_data(dataset_zero, data_zero)
+    train, test = standardize_data(dataset_zero[selected_columns], data_zero[selected_columns])
 
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced
