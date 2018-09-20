@@ -123,6 +123,14 @@ for year_selected in range(year_sel[0], year_sel[1]):
     labels_test = generate_labels_one_year(year_selected, path_labels)
     weeks = labels_test["week"]
 
+    # Add year and column week
+    dataset["year"], dataset["week"] = dataset["Week"].str.split('-', 1).str
+    data["year"], data["week"] = data["Week"].str.split('-', 1).str
+    dataset["week"] = dataset["week"].apply(pd.to_numeric)
+    dataset["year"] = dataset["year"].apply(pd.to_numeric)
+    data["week"] = data["week"].apply(pd.to_numeric)
+    data["year"] = data["year"].apply(pd.to_numeric)
+
     # Create a copy of the dataset where we fills NaN values
     # with 0.
     dataset_zero = dataset.fillna(0)
@@ -130,13 +138,11 @@ for year_selected in range(year_sel[0], year_sel[1]):
 
     # Split year week into two elements and generate month column
     if not arguments["--no-month-year"]:
-        dataset_zero["year"], dataset_zero["week"] = dataset_zero["Week"].str.split('-',1).str
-        data_zero["year"], data_zero["week"] = data_zero["Week"].str.split('-',1).str
         dataset_zero = add_month(dataset_zero)
         data_zero = add_month(data_zero)
 
     # Standardize data
-    train, test = standardize_data(dataset_zero[selected_columns], data_zero[selected_columns])
+    train, test = standardize_data(dataset_zero, data_zero)
 
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced
@@ -205,12 +211,17 @@ for year_selected in range(year_sel[0], year_sel[1]):
                              mean_squared_error(labels_test['incidence'].fillna(0), result),
                              np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
                              ])
-        for p in get_important_pages(current_weighted_features, 10):
+        for p in get_important_pages(current_weighted_features, 20):
             top_features_writer.writerow([str(year_selected-1)+"-"+str(year_selected),
                                           arguments["<country_name>"],
                                           p[0],
                                           float(p[1])])
 
+
+# Generate a dataframe with all the important informations
+complete_data = all_true_labels.copy()
+complete_data["prediction"] = pd.Series(all_predicted_values, index=complete_data.index)
+complete_data.to_csv(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"-prediction.csv", index=False)
 
 # Get important pages to generate the plot we need
 important_pages = get_important_pages(all_weighted_feature, 5)
