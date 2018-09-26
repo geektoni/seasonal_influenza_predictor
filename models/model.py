@@ -294,44 +294,45 @@ if not arguments["--no-images"]:
     figf = plt.figure(4, figsize=(15, 6))
     axf = figf.add_subplot(111)
 
-    # Generate the graph showing the pageview variation of the top 5 Wikipedia's pages
-    # choosen by the model.
-    plt.title("Pageview variation "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
-    plt.ylabel("Pageview value", fontsize=17)
-    plt.xlabel("Year-Week", fontsize=17)
+    if arguments["--f"]:
+        # Generate the graph showing the pageview variation of the top 5 Wikipedia's pages
+        # choosen by the model.
+        plt.title("Pageview variation "+str(year_sel[0]-1)+" - "+str(year_sel[1]-1), fontsize=18)
+        plt.ylabel("Pageview value", fontsize=17)
+        plt.xlabel("Year-Week", fontsize=17)
 
-    # Plot the axes labels
-    plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
-    plt.yticks(fontsize=15)
+        # Plot the axes labels
+        plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
+        plt.yticks(fontsize=15)
 
-    # Plot all the pageview data and the ILI incidence
-    std_all_features_values = stz(all_features_values[selected_columns])
-    for key, value in important_pages:
-     plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
-    plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
+        # Plot all the pageview data and the ILI incidence
+        std_all_features_values = stz(all_features_values[selected_columns])
+        for key, value in important_pages:
+         plt.plot(range(0, len(std_all_features_values[key])), std_all_features_values[key], '-', label=key, linewidth=3)
+        plt.plot(range(0, len(all_true_labels["incidence"])), stz(all_true_labels["incidence"]), 'k-', label="Incidence", linewidth=3)
 
-    # Add dotted line into the graph to delimit the influenza seasons.
-    for i in range(1, (year_sel[1]-year_sel[0])):
-        plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
+        # Add dotted line into the graph to delimit the influenza seasons.
+        for i in range(1, (year_sel[1]-year_sel[0])):
+            plt.axvline(26*i, linestyle="dashed", color="k", linewidth=3)
 
-    # Update some graphical options
-    plt.grid()
-    plt.legend(fontsize=16, loc="best")
-    plt.tight_layout()
+        # Update some graphical options
+        plt.grid()
+        plt.legend(fontsize=16, loc="best")
+        plt.tight_layout()
 
-    # Save again the graph on file
-    plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
+        # Save again the graph on file
+        plt.savefig(save_directory+"season_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features.png", dpi=150)
 
-    # Correlation Matrix
-    new_pages=[]
-    for p in important_pages:
-        new_pages.append(p[0])
-    first = pd.DataFrame(all_features_values[new_pages])
-    second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
-    first['incidence'] = second
-    first = first.loc[:, (first != 0).any(axis=0)]
-    new_pages = list(first.columns.values)
-    correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
+        # Correlation Matrix
+        new_pages=[]
+        for p in important_pages:
+            new_pages.append(p[0])
+        first = pd.DataFrame(all_features_values[new_pages])
+        second = pd.DataFrame(all_true_labels["incidence"]).set_index(first.index.values)
+        first['incidence'] = second
+        first = first.loc[:, (first != 0).any(axis=0)]
+        new_pages = list(first.columns.values)
+        correlation_matrix(first, "Correlation Matrix "+str(year_sel[0]-1)+"-"+str(year_sel[1]-1), new_pages, save_directory+"cmatrix_"+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+".png")
 
 ###################
 #  SAVE TO FILE   #
