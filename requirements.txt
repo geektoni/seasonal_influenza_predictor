@@ -1,0 +1,6 @@
+pandas
+matplotlib
+sklearn
+tabulate
+docopt
+glmnet_py
