@@ -265,13 +265,13 @@ if not arguments["--no-images"]:
     # have the year-week pair only every two ticks.
     weeks_used = []
     for k, v in enumerate(total_weeks):
-        if k%2==0:
+        if k%5==0:
             weeks_used.append(v)
-        else:
-            weeks_used.append(" ")
+        #else:
+        #    weeks_used.append(" ")
 
     # Set up the axes ticks
-    plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
+    plt.xticks(range(0, len(total_weeks), 5), weeks_used, rotation="vertical", fontsize=15)
     plt.yticks(fontsize=15)
 
     # Plot the model result and the incidence
@@ -302,7 +302,7 @@ if not arguments["--no-images"]:
         plt.xlabel("Year-Week", fontsize=17)
 
         # Plot the axes labels
-        plt.xticks(range(0, len(weeks_used)), weeks_used, rotation="vertical", fontsize=15)
+        plt.xticks(range(0, len(total_weeks), 5), weeks_used, rotation="vertical", fontsize=15)
         plt.yticks(fontsize=15)
 
         # Plot all the pageview data and the ILI incidence
