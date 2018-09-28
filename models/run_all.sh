@@ -21,7 +21,7 @@ do
 	    do
 
             # Create the directory, if it doesn't exists
-	        directory=$base_dir/$data_type/$type_exec/$c
+	        directory=$base_dir/$data_type/$type_exec/$c/
     	    if [ ! -d $base_dir/$c ]; then
         	    mkdir -p $base_dir/$data_type/$type_exec/$c
     	    fi
@@ -40,7 +40,7 @@ do
 
             # Check which type of execution we need to perform.
             if [ $type_exec == "no-future" ]; then
-                start_year="$(expr $start_year+1)"
+                start_year="$(expr $start_year + 1)"
                 command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$data_type ./../data/keywords/keywords_${c}.txt $c --f --d $directory --no-future"
             else
                 command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$data_type ./../data/keywords/keywords_${c}.txt $c --f --d $directory"
