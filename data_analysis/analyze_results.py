@@ -20,12 +20,17 @@ if __name__ == "__main__":
 	arguments = docopt(__doc__)
 	file_path = arguments["<result_data>"]
 
-	results = pd.read_csv(file_path)
+	print("file_name, mse, r2_score, pcc")
 
-	# Calculate some metrics
-	mse = mean_squared_error(results["incidence"].fillna(0), results["prediction"])
-	r2 = r2_score(results["incidence"].fillna(0), results["prediction"])
-	pcc = np.corrcoef(results["incidence"].fillna(0), results["prediction"], rowvar=False)[0][1]
+	for _file in file_path:
 
-	print(file_path +","+ str(mse)+ "," +str(r2)+","+ str(pcc))
+		# Read the file
+		results = pd.read_csv(file_path)
+
+		# Calculate some metrics
+		mse = mean_squared_error(results["incidence"].fillna(0), results["prediction"])
+		r2 = r2_score(results["incidence"].fillna(0), results["prediction"])
+		pcc = np.corrcoef(results["incidence"].fillna(0), results["prediction"], rowvar=False)[0][1]
+
+		print(file_path + "," + str(mse) + "," + str(r2) + "," + str(pcc))
 
