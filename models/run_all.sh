@@ -5,9 +5,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-country_list=("germany" "austria" "italy" "netherlands")
-year_list=("2008-2016" "2013-2016" "2008-2016" "2010-2016")
-year_list_future=("2008-2018" "2013-2018" "2008-2018" "2010-2018")
+country_list=("belgium" "germany" "austria" "italy" "netherlands")
+year_list=("2010-2016" "2008-2016" "2013-2016" "2008-2016" "2010-2016")
+year_list_future=("2010-2018" "2008-2018" "2013-2018" "2008-2018" "2010-2018")
 type_of_exec=("no-future" "future")
 type_of_data=("old_data" "new_data" "pageviews")
 base_dir="./complete_results"
