@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images] [--no-month-year]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images] [--no-month-year] [--standardize-week]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -33,7 +33,7 @@ from sklearn.metrics import r2_score
 from tabulate import tabulate
 from docopt import docopt
 
-from models_utils import generate, generate_labels, generate_labels_one_year, generate_one_year, standardize_data, generate_keywords, stz, get_important_pages, correlation_matrix, add_month
+from models_utils import *
 
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
@@ -130,6 +130,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     dataset["year"] = dataset["year"].apply(pd.to_numeric)
     data["week"] = data["week"].apply(pd.to_numeric)
     data["year"] = data["year"].apply(pd.to_numeric)
+    selected_columns = selected_columns + ["week"]
 
     # Create a copy of the dataset where we fills NaN values
     # with 0.
@@ -142,7 +143,16 @@ for year_selected in range(year_sel[0], year_sel[1]):
         data_zero = add_month(data_zero)
 
     # Standardize data
-    train, test = standardize_data(dataset_zero[selected_columns], data_zero[selected_columns])
+    if not arguments["--standardize-week"]:
+        train, test = standardize_data(dataset_zero[selected_columns], data_zero[selected_columns])
+    else:
+        columns_without_week = selected_columns.copy()
+        columns_without_week.remove("week")
+        train, test = standardize_week(dataset_zero[selected_columns], data_zero[selected_columns], columns_without_week)
+
+    # Drop week information
+    train = train.drop(["week"], axis=1)
+    test = test.drop(["week"], axis=1)
 
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced

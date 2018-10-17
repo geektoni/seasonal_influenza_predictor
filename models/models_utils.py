@@ -235,6 +235,28 @@ def standardize_data(train, test):
     data_imp[np.isnan(data_imp)] = 0
     return (dataset_imp, data_imp)
 
+def standardize_week(train, test, column_list):
+
+    # Concatenate together the dataframes
+    data_total = pd.concat([train, test])
+
+    # Get all the unique weeks
+    unique_weeks = data_total["week"].unique()
+
+    train_tmp = train
+    test_tmp = test
+
+    for c in unique_weeks:
+        mean = data_total[data_total.week == c].mean()
+        train_week = train_tmp["week"].tolist()
+        test_week = test_tmp["week"].tolist()
+        train_tmp.loc[train_tmp.week == c, column_list] = train_tmp[train_tmp.week == c][column_list] - mean
+        train_tmp["week"] = train_week
+        test_tmp.loc[test_tmp.week == c, column_list] = test_tmp[test_tmp.week == c][column_list] - mean
+        test_tmp["week"] = test_week
+
+    return train_tmp, test_tmp
+
 def stz(data):
     """
     Standardize between [-1, 1] the data give by applying this
@@ -305,5 +327,5 @@ def add_month(dataset_zero):
     dataset_zero["full_date"] = pd.to_datetime(dataset_zero.year.astype(str), format='%Y') + \
                                 pd.to_timedelta(dataset_zero.week.mul(7).astype(str) + ' days')
     dataset_zero["month"] = pd.DatetimeIndex(dataset_zero['full_date']).month
-    dataset_zero = dataset_zero.drop(["full_date", "week"], axis=1)
+    dataset_zero = dataset_zero.drop(["full_date"], axis=1)
     return dataset_zero
