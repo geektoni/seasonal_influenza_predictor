@@ -262,6 +262,12 @@ def standardize_week(train, test, column_list):
     for index, row in test.iterrows():
         test_tmp = test_tmp.append(row-total_means[total_means.week == row["week"]])
 
+    # Reconstruct month column
+    train_tmp = train_tmp.drop(["month"], axis=1)
+    train_tmp["month"] = train["month"].tolist()
+    test_tmp = test_tmp.drop(["month"], axis=1)
+    test_tmp["month"] = test["month"].tolist()
+
     # Reconstruct week columns
     #train_tmp.update(train["week"])
     #test_tmp.update(test["week"])
