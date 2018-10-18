@@ -243,17 +243,28 @@ def standardize_week(train, test, column_list):
     # Get all the unique weeks
     unique_weeks = data_total["week"].unique()
 
-    train_tmp = train
-    test_tmp = test
+    # Build some temporary dataframes
+    train_tmp = pd.DataFrame(columns=column_list)
+    test_tmp = pd.DataFrame(columns=column_list)
+    total_means = pd.DataFrame(columns=column_list)
 
+    # Generate a matrix with all the means for each week
     for c in unique_weeks:
-        mean = data_total[data_total.week == c].mean()
-        train_week = train_tmp["week"].tolist()
-        test_week = test_tmp["week"].tolist()
-        train_tmp.loc[train_tmp.week == c, column_list] = train_tmp[train_tmp.week == c][column_list] - mean
-        train_tmp["week"] = train_week
-        test_tmp.loc[test_tmp.week == c, column_list] = test_tmp[test_tmp.week == c][column_list] - mean
-        test_tmp["week"] = test_week
+        mean = data_total.loc[data_total.week == c, column_list].mean()
+        mean.loc["week"] = c
+        total_means = total_means.append(mean, ignore_index=True)
+
+    # Generate scaled train data.
+    for index, row in train.iterrows():
+        train_tmp = train_tmp.append(row["week"]-total_means[total_means.week == row["week"]])
+
+    # Generated scaled test data.
+    for index, row in test.iterrows():
+        test_tmp = test_tmp.append(row["week"]-total_means[total_means.week == row["week"]])
+
+    # Reconstruct week columns
+    #train_tmp.update(train["week"])
+    #test_tmp.update(test["week"])
 
     return train_tmp, test_tmp
 

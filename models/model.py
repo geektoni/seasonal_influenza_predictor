@@ -106,7 +106,6 @@ if arguments["--f"]:
 # and predict the ILI incidence.
 for year_selected in range(year_sel[0], year_sel[1]):
 
-    print("------------")
     print("[*] ", year_selected )
 
     # Generate the list of excluded years
