@@ -68,7 +68,7 @@ path_labels = arguments["<incidence_path>"]
 keywords = arguments["<keywords_file>"]
 
 # Selected columns that will be extracted from the dataframes
-selected_columns = generate_keywords(keywords)
+selected_columns = generate_keywords(keywords)+["week"]
 if not arguments["--no-month-year"]:
     selected_columns = selected_columns + ["year", "month"]
 
@@ -106,7 +106,7 @@ if arguments["--f"]:
 # and predict the ILI incidence.
 for year_selected in range(year_sel[0], year_sel[1]):
 
-    print("[*] ", year_selected )
+    print("[*] ", year_selected)
 
     # Generate the list of excluded years
     excluded=[]
@@ -129,7 +129,6 @@ for year_selected in range(year_sel[0], year_sel[1]):
     dataset["year"] = dataset["year"].apply(pd.to_numeric)
     data["week"] = data["week"].apply(pd.to_numeric)
     data["year"] = data["year"].apply(pd.to_numeric)
-    selected_columns = selected_columns + ["week"]
 
     # Create a copy of the dataset where we fills NaN values
     # with 0.
@@ -140,6 +139,9 @@ for year_selected in range(year_sel[0], year_sel[1]):
     if not arguments["--no-month-year"]:
         dataset_zero = add_month(dataset_zero)
         data_zero = add_month(data_zero)
+    else:
+        dataset_zero.drop(["year"], axis=1)
+        data_zero.drop(["year"], axis=1)
 
     # Standardize data
     if not arguments["--standardize-week"]:
