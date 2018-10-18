@@ -256,11 +256,11 @@ def standardize_week(train, test, column_list):
 
     # Generate scaled train data.
     for index, row in train.iterrows():
-        train_tmp = train_tmp.append(row["week"]-total_means[total_means.week == row["week"]])
+        train_tmp = train_tmp.append(row-total_means[total_means.week == row["week"]])
 
     # Generated scaled test data.
     for index, row in test.iterrows():
-        test_tmp = test_tmp.append(row["week"]-total_means[total_means.week == row["week"]])
+        test_tmp = test_tmp.append(row-total_means[total_means.week == row["week"]])
 
     # Reconstruct week columns
     #train_tmp.update(train["week"])
