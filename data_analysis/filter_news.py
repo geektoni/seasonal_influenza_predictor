@@ -53,7 +53,7 @@ if __name__ == "__main__":
 		if week_number in weeks:
 
 			# Read the file
-			file = pd.read_csv(join(args["<directory>"], file))
+			file = pd.read_csv(args["<directory>"]+"/"+file)
 
 			# Count how many news we have, considering only the italian ones
 			total_news = file[file.lang_detected == "it"].count()
