@@ -9,7 +9,7 @@ Options:
 from docopt import docopt
 
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, join, getsize
 
 import datetime
 
@@ -34,8 +34,9 @@ if __name__ == "__main__":
 	# Final count dictionary
 	news_count = {}
 
-	# Get only the files in the directory
-	onlyfiles = [f for f in listdir(args["<directory>"]) if isfile(join(args["<directory>"], f))]
+	# Get only the files in the directory which have a dimension greater than zero
+	onlyfiles = [f for f in listdir(args["<directory>"])
+				 if isfile(join(args["<directory>"], f)) and getsize(join(args["<directory>"], f))>0]
 
 	# Loop over all the files and parse them
 	for file in tqdm(onlyfiles):
