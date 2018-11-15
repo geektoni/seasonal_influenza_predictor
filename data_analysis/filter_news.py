@@ -55,7 +55,7 @@ if __name__ == "__main__":
 				news_count[year] = [0 for x in range(53)]
 
 			# Increment the week count
-			news_count[year] += int(total_news)
+			news_count[year][week_number] += int(total_news)
 
 	# Generate the index for the future dataframe
 	df_index = []
