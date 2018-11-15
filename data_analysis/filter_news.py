@@ -13,7 +13,15 @@ from os.path import isfile, join
 
 import datetime
 
+from tqdm import *
+
 import pandas as pd
+
+def find_index(id, lis):
+	for i in range(0, len(lis)):
+		if id == lis[i]:
+			return i
+	return -1
 
 if __name__ == "__main__":
 
@@ -30,7 +38,7 @@ if __name__ == "__main__":
 	onlyfiles = [f for f in listdir(args["<directory>"]) if isfile(join(args["<directory>"], f))]
 
 	# Loop over all the files and parse them
-	for file in onlyfiles:
+	for file in tqdm(onlyfiles):
 
 		# Split the filename and get the day/month/year
 		file_name = file.split("_")
@@ -52,10 +60,10 @@ if __name__ == "__main__":
 
 			# If that year column is still empty, create it and set it to zero
 			if news_count.get(year, []) == []:
-				news_count[year] = [0 for x in range(53)]
+				news_count[year] = [0 for x in range(0, len(weeks))]
 
 			# Increment the week count
-			news_count[year][week_number] += int(total_news)
+			news_count[year][find_index(week_number, weeks)] += int(total_news["lang_detected"])
 
 	# Generate the index for the future dataframe
 	df_index = []
