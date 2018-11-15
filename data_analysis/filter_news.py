@@ -1,6 +1,7 @@
 """Generate year files with news counts
 Usage:
   filter_news.py <directory> <output>
+
 Options:
   -h, --help
 """
