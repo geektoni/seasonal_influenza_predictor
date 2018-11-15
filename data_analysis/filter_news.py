@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
 	# Generate the dataframe
 	final_df = pd.DataFrame(news_count)
-	final_df.set_index(df_index)
+	final_df.set_index([df_index])
 
 	# Print the dataframe to show the result
 	print(final_df)
