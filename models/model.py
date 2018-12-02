@@ -26,7 +26,6 @@ Usage:
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import csv
 from sklearn.linear_model import LassoCV, ElasticNetCV
 from sklearn.metrics import mean_squared_error
@@ -39,6 +38,18 @@ from models_utils import *
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
 from cvglmnet import cvglmnet
+
+
+# Try to import matplotlib (if we are running on a system without Tkinter
+# then we will just skip it)
+can_print = True
+try:
+    import matplotlib.pyplot as plt
+except ImportError as e:
+    can_print = False
+    print(e.message)
+    print("The ability of generating graph is currently disabled.")
+
 
 #########################
 #### INITIALIZATION #####
@@ -278,7 +289,7 @@ print(tabulate(important_pages, headers=["Page name", "Weight"]))
 #### GRAPHS GENERATION ####
 ###########################
 
-if not arguments["--no-images"]:
+if not arguments["--no-images"] and can_print:
     # Plot some informations
     fig = plt.figure(3, figsize=(15, 6))
     ax = fig.add_subplot(111)
