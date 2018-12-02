@@ -1,6 +1,6 @@
 """Generate year files with news counts
 Usage:
-  filter_news.py <directory> <output>
+  filter_news.py <directory> <output> <lang>
 
 Options:
   -h, --help
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 			file = pd.read_csv(args["<directory>"]+"/"+file)
 
 			# Count how many news we have, considering only the italian ones
-			total_news = file[file.lang_detected == "it"].count()
+			total_news = file[file.lang_detected == args["<lang>"]].count()
 
 			# If that year column is still empty, create it and set it to zero
 			if news_count.get(year, []) == []:
