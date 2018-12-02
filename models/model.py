@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--d=<directory>] [--no-future] [--no-images] [--no-month-year] [--standardize-week]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--e] [--d=<directory>] [--no-future] [--no-images] [--no-month-year] [--standardize-week]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -15,6 +15,7 @@ Usage:
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
   -f, --file        Write informations to file
   -v, --verbose     Output more informations
+  -e, --elastic     Use ElasticNet
   -d, --directory   Select a directory in which save your files
   -n, --no-future   Use a different method to train the model (avoid using seasonal influenza which are
                     later than the one we want to predict)
@@ -27,7 +28,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-from sklearn.linear_model import LassoCV
+from sklearn.linear_model import LassoCV, ElasticNetCV
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from tabulate import tabulate
@@ -61,6 +62,11 @@ using_poisson = False
 if arguments["--p"]:
     using_poisson = True
     model_type="Poisson Model"
+
+using_elastic = False
+if arguments["--e"]:
+    using_elastic = True
+    model_type = "ElasticNet Model"
 
 # Feature path and labels
 path_features = arguments["<dataset_path>"]
@@ -159,9 +165,19 @@ for year_selected in range(year_sel[0], year_sel[1]):
     # trained on the dataset in which NaN values are replaced
     # with the column mean.
     if not using_poisson:
-        model = LassoCV(max_iter=100000, n_jobs=-1, n_alphas=1000, random_state=1)
+        if using_elastic:
+            l1_values = np.linspace(0,1,10)
+            alphas = np.linspace(0,0.5,10)
+            model = ElasticNetCV(l1_ratio=l1_values, n_jobs=-1, random_state=1, max_iter=100000, alphas=alphas, selection="random")
+        else:
+            model = LassoCV(max_iter=100000, n_jobs=-1, n_alphas=1000, random_state=1)
         model.fit(train, labels["incidence"].fillna(0))
         result = model.predict(test)
+
+        if using_elastic:
+            print("Best L1_ratio: {}".format(model.l1_ratio_))
+
+        print("Best Alpha: {}".format(model.alpha_))
     else:
         model = cvglmnet(x=train.values.copy(), y=labels["incidence"].fillna(0).copy().values, family='poisson', alpha=1.0,
                        ptype="mse", parallel=True, nfolds=10)
@@ -205,7 +221,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     peaks_value.append(labels_test["incidence"][index_peak])
     predicted_peaks_value.append(results["incidence"][index_peak_m])
     if arguments["--v"]:
-        print("[*] Influenza Season Peak (Week):", labels_test.iloc[index_peak]["week"])
+        print("[*] Influenza Season Peak (Week): ", labels_test.iloc[index_peak]["week"])
         print("[*] Influenza Seasons Predicted Peak (Week): ", labels_test.iloc[index_peak_m]["week"])
         print("[*] Influenza Season Peak Value: ", labels_test.iloc[index_peak]["incidence"])
         print("[*] Influenza Season Predicted Peak Value: ", result[index_peak_m])
