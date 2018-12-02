@@ -38,6 +38,10 @@ if __name__ == "__main__":
 	onlyfiles = [f for f in listdir(args["<directory>"])
 				 if isfile(join(args["<directory>"], f)) and getsize(join(args["<directory>"], f))>0]
 
+	if (len(onlyfiles) == 0):
+		print("No file with size greater the zero found! Exiting.")
+		exit(-1)
+
 	# Loop over all the files and parse them
 	for file in tqdm(onlyfiles):
 
