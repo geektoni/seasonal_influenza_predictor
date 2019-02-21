@@ -4,7 +4,7 @@
 """Machine learning model which uses Wikipedia data to predicts ILI levels.
 
 Usage:
-  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--f] [--v] [--e] [--d=<directory>] [--no-future] [--no-images] [--no-month-year] [--standardize-week]
+  model.py <year_start> <year_end> <dataset_path> <incidence_path> <keywords_file> <country_name> [--p] [--ne] [--f] [--v] [--e] [--d=<directory>] [--no-future] [--no-images] [--no-month-year] [--standardize-week]
 
   <year_start>      The first influenza season we want to predict.
   <year_end>        The last influenza season we want to predict.
@@ -13,6 +13,7 @@ Usage:
   <keywords_file>   The path to the file which contains the Wikipedia pages used.
   <country_name>    The name of the country we are analyzing
   -p, --poisson     Use the Poisson model + LASSO instead of the linear one.
+  -ne, --negative-bin   Use the Negative Binomial model + LASSO.
   -f, --file        Write informations to file
   -v, --verbose     Output more informations
   -e, --elastic     Use ElasticNet
@@ -24,21 +25,21 @@ Usage:
   -h, --help        Print this help message
 """
 
-import pandas as pd
-import numpy as np
 import csv
+
 from sklearn.linear_model import LassoCV, ElasticNetCV
-from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from tabulate import tabulate
 from docopt import docopt
 
 from models_utils import *
 
+from pyglmnet import GLMCV
+
+import glmnet_python
 from cvglmnetCoef import cvglmnetCoef
 from cvglmnetPredict import cvglmnetPredict
 from cvglmnet import cvglmnet
-
 
 # Try to import matplotlib (if we are running on a system without Tkinter
 # then we will just skip it)
@@ -68,11 +69,18 @@ year_start = int(arguments["<year_start>"])
 year_end = int(arguments["<year_end>"])+1
 
 # Model type
+if arguments["--p"] and arguments["--ne"]:
+    print("[*] Cannot use both Poisson and Negative Binomial, please select just one of them.")
+
 model_type = "Linear Model"
 using_poisson = False
+using_negbinomial = False
 if arguments["--p"]:
     using_poisson = True
     model_type="Poisson Model"
+elif arguments["--ne"]:
+    using_negbinomial = True
+    model_type="Negative Binomial Model"
 
 using_elastic = False
 if arguments["--e"]:
@@ -175,7 +183,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     # Create a Lasso Cross-Validation instance which will be
     # trained on the dataset in which NaN values are replaced
     # with the column mean.
-    if not using_poisson:
+    if not using_poisson and not using_negbinomial:
         if using_elastic:
             l1_values = np.linspace(0,1,10)
             alphas = np.linspace(0,0.5,10)
@@ -189,16 +197,26 @@ for year_selected in range(year_sel[0], year_sel[1]):
             print("Best L1_ratio: {}".format(model.l1_ratio_))
 
         print("Best Alpha: {}".format(model.alpha_))
-    else:
-        model = cvglmnet(x=train.values.copy(), y=labels["incidence"].fillna(0).copy().values, family='poisson', alpha=1.0,
-                       ptype="mse", parallel=True, nfolds=10)
+    elif using_negbinomial:
+        model = GLMCV(distr='neg-binomial', score_metric="pseudo_R2", cv=3, max_iter=100000)
+        model.fit(train.values.copy(), labels["incidence"].fillna(0).copy().values)
+        result = model.predict(test.values)
+    elif using_poisson:
+        model = cvglmnet(x=train.values.copy(), y=labels["incidence"].fillna(0).copy().values, family='poisson',
+                         alpha=1.0,
+                         ptype="mse", parallel=True, nfolds=10)
         result = cvglmnetPredict(model, test.values, ptype='response', s="lambda_min")
         coeff = cvglmnetCoef(model, s="lambda_min")
 
     # Get the feature coefficients
-    if not using_poisson:
-        coeff = model.coef_
-    else:
+    if not using_poisson and not using_negbinomial:
+        if not using_elastic:
+            coeff = model.coef_
+        else:
+            coeff = model.beta_
+    elif using_negbinomial:
+        coeff = model.beta_
+    elif using_poisson:
         coeff = cvglmnetCoef(model, s="lambda_min")
 
     # Add the pair (value, coeff) to a dictionary
