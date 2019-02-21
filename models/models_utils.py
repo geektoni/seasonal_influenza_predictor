@@ -2,9 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 
-import glmnet_python
-from cvglmnet import cvglmnet
-from cvglmnetPredict import cvglmnetPredict
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score
 
@@ -272,7 +269,7 @@ def standardize_week(train, test, column_list):
     #train_tmp.update(train["week"])
     #test_tmp.update(test["week"])
 
-    return train_tmp, test_tmp
+    return (train_tmp, test_tmp)
 
 def stz(data):
     """
