@@ -187,9 +187,9 @@ for year_selected in range(year_sel[0], year_sel[1]):
         if using_elastic:
             l1_values = np.linspace(0,1,10)
             alphas = np.linspace(0,0.5,10)
-            model = ElasticNetCV(l1_ratio=l1_values, n_jobs=-1, random_state=1, max_iter=100000, alphas=alphas, selection="random")
+            model = ElasticNetCV(l1_ratio=l1_values, n_jobs=-1, random_state=1, max_iter=100000, alphas=alphas, selection="random", cv=5, normalize=True)
         else:
-            model = LassoCV(max_iter=100000, n_jobs=-1, n_alphas=1000, random_state=1)
+            model = LassoCV(max_iter=100000, n_jobs=-1, n_alphas=1000, random_state=1, cv=5)
         model.fit(train, labels["incidence"].fillna(0))
         result = model.predict(test)
 
@@ -408,4 +408,3 @@ if not arguments["--no-images"] and can_print:
 #        spamwriter.writerow(['pearson', pcc])
 #        for p in important_pages:
 #            spamwriter.writerow([p[0], float(p[1])])
-
