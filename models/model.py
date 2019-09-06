@@ -136,7 +136,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     # Generate the list of excluded years
     excluded=[]
     if arguments["--no-future"]:
-        for i in range(2007, 2019):
+        for i in range(2007, 2020):
             if i>year_selected:
                 excluded.append(i)
 
