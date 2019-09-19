@@ -83,7 +83,10 @@ with open(arguments["<input>"], "r") as f:
                 all_data[total[0].replace("\\", "")] = [0 for x in range(53)]
 
             # Sum the visits
-            all_data[total[0].replace("\\", "")][int(week_number)-1] += int(total[2]);
+            try:
+                all_data[total[0].replace("\\", "")][int(week_number)-1] += int(total[2]);
+            except ValueError:
+                print("[*] Catch value error here: {}".format(total[2]))
 
 
 for i in range(1, 54):

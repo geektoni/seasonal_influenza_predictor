@@ -73,6 +73,7 @@ function parse_files {
 
 	# Get filename
 	file_name=`basename ${1:-}`
+  file_name="${file_name%.*}"
 
 	# Get date
 	log_date=`echo $file_name | tr "-" " " | awk '{print $2 "-" $3}'`
@@ -128,7 +129,7 @@ else
 fi
 
 # Finally, merge together all the files
-for f in $output/*.gz.output
+for f in $output/*.output
 do
 	[[ -e $f ]] || break  # handle the case of no files
 	print_debug "[*] Merging file $f"

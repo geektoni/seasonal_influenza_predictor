@@ -45,9 +45,8 @@ EOF
 # Add default value if -o was not set
 if [ -z $output_dir ]; then output_dir='./output'; fi
 if [ -z $start_year ]; then start_year='2007'; fi
-if [ -z $end_year ]; then end_year='2016'; fi
+if [ -z $end_year ]; then end_year='2019'; fi
 if [ -z $language ]; then language='it'; fi
-
 
 # Directory where all the Wikipedia log are located
 #input_dir="/mnt/fluiddata/cconsonni/pagecounts-new/pagecounts/data/output"
@@ -65,10 +64,8 @@ if [ -z $language ]; then language='it'; fi
 for year in $( seq $start_year $end_year )
 do
     if [ $year == 2007 ]; then
-       	all_files="$input_dir/$year-*"
-       	#all_files="$input_dir/output-$year*"
+      all_files="$input_dir/$year-*"
     else
-        #all_files="$input_dir/$year-*/output-*"
     	all_files="$input_dir/$year-*"
     fi
     ./parse_dumps_bare.sh -k "$keywords_file" -i "$all_files" -o "$output_dir/$year" -l "$language" --debug
