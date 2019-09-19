@@ -9,6 +9,7 @@
 # General variables
 export input=''
 export output=''
+export language=''
 export regexp=''
 export exp=''
 export pages=''
@@ -16,7 +17,7 @@ export debug=false
 
 # Usage and version information
 eval "$(docopts -V - -h - : "$@" <<EOF
-Usage: parse_dumps_bare (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [--debug]
+Usage: parse_dumps_bare (-k <pages> | -e <exp>) [-i <input>] [-o <output>] [-l <language>] [--debug]
 
 Options:
 	-k <pages>		File containing the keywords which will be used.
@@ -50,7 +51,7 @@ function print_debug {
 function generate_regexp {
 
 	# Set up project id, keywords and other field
-	project="it"
+	project=$language
 	keywords=(`cat ${1:-}`)
 	other=' .'
 
@@ -89,10 +90,12 @@ function parse_files {
 # Add default values if -i or -o were not set
 if [ -z $input ]; then input='./input'; fi
 if [ -z $output ]; then output='./output'; fi
+if [ -z $language ]; then language='it'; fi
 
 print_debug "[*] Debug value --> $debug"
 print_debug "[*] Input directory value --> $input"
 print_debug "[*] Output directory value --> $output"
+print_debug "[*] Language selected --> $language"
 print_debug "[*] Custom regexp --> $exp"
 print_debug "[*] Keywords file --> $pages"
 
@@ -115,13 +118,13 @@ export -f parse_files
 export -f print_debug
 
 # Get parallel version to manage no-notice option
-p_v=`parallel --version | grep parallel | head -1 | awk '{print $3}'`
+p_v=`./parallel --version | grep parallel | head -1 | awk '{print $3}'`
 
 # Parse the dump files
 if [ $p_v -ge 20141022 ]; then
-	ls $input/*.gz | parallel --no-notice parse_files
+	ls $input/*.gz | ./parallel --no-notice parse_files
 else
-	ls $input/*.gz | parallel parse_files
+	ls $input/*.gz | ./parallel parse_files
 fi
 
 # Finally, merge together all the files

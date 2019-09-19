@@ -94,7 +94,7 @@ for i in range(1, 54):
 	index_year.append(year+"-"+number)
 
 # Generate a pandas dataframe with all the data
-print index_year
+print(index_year)
 df = pd.DataFrame(all_data);
 df = df.set_index([index_year]);
 
@@ -103,7 +103,7 @@ df = df.set_index([index_year]);
 for c in tqdm(df.columns):
     df[c] = df[c].astype(np.float64)
     r = requests.get(wiki_url+str(c))
-    wiki_data = json.loads(r.content)
+    wiki_data = json.loads(r.text)
     for i in range(0, 53):
         # Generate week number original
         week_number = df.index[i]
@@ -120,8 +120,8 @@ for c in tqdm(df.columns):
                 day = date[2]
                 week = datetime.date(int(year), int(month), int(day)).isocalendar()[1]
 
-                if (int(year) > int(year_orig) or int(week) > week_orig):
-                    df[c][i] = np.NaN
+                if (int(year) > int(year_orig) or int(week) > int(week_orig)):
+                    df.loc[week_number, c] = np.NaN
 
 # Print the dataframe to show the result
 print(df)
