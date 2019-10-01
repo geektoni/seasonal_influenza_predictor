@@ -55,8 +55,9 @@ function generate_regexp {
 	keywords=(`cat ${1:-}`)
 	other=' .'
 
-	# Build the regexp
-	regexp="$project ("
+	# Build the regexp. We account for both desktop and
+  # mobile views.
+	regexp="($project|$project.m) ("
 	for key in "${keywords[@]}"
 	do
 		regexp="$regexp$key|"
