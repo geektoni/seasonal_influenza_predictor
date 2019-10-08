@@ -7,9 +7,9 @@ IFS=$'\n\t'
 
 country_list=("belgium" "germany" "austria" "italy" "netherlands")
 year_list=("2010-2016" "2008-2016" "2013-2016" "2008-2016" "2010-2016")
-year_list_future=("2010-2018" "2008-2018" "2013-2018" "2008-2018" "2010-2018")
+year_list_future=("2010-2019" "2008-2019" "2013-2019" "2008-2019" "2010-2019")
 type_of_exec=("no-future" "future")
-type_of_data=("old_data" "new_data" "pageviews")
+type_of_data=("old_data" "new_data" "pageviews" "cyclerank")
 base_dir="./complete_results"
 
 for data_type in ${type_of_data[@]}
@@ -34,16 +34,26 @@ do
                 end_year="$(echo ${year_list_future[$counter]} | cut -f 2 -d -)"
             else
                 start_year="2016"
-                end_year="2018"
+                end_year="2019"
             fi
 
 
             # Check which type of execution we need to perform.
+            incidence_data_type=""
+            keywords_ending=""
+            if [ $data_type == "cyclerank" ]; then
+              incidence_data_type="new_data"
+              keywords_ending="cyclerank_${c}"
+            else
+              incidence_data_type=$data_type
+              keywords_ending=${c}
+            fi
+
             if [ $type_exec == "no-future" ]; then
                 start_year="$(expr $start_year + 1)"
-                command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$data_type ./../data/keywords/keywords_${c}.txt $c --f --d $directory --no-future"
+                command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$incidence_data_type ./../data/keywords/keywords_${keywords_ending}.txt $c --f --d $directory --no-future"
             else
-                command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$data_type ./../data/keywords/keywords_${c}.txt $c --f --d $directory"
+                command="./model.py $start_year $end_year ./../data/wikipedia_${c}/$data_type ./../data/$c/$incidence_data_type ./../data/keywords/keywords_${keywords_ending}.txt $c --f --d $directory"
             fi
 
             # Evaluate the command
