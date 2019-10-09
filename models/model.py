@@ -282,6 +282,18 @@ complete_data.to_csv(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"-
 # Get important pages to generate the plot we need
 important_pages = get_important_pages(all_weighted_feature, 10)
 
+# Save all important features to file
+if arguments["--f"]:
+    imp_pages_keys = list(dict(important_pages).keys())
+    imp_pages_values = stz(all_features_values[imp_pages_keys])
+    imp_pages_values= imp_pages_values.reset_index()
+    imp_pages_values= imp_pages_values.reindex(index=range(0, len(weeks)))
+    weeks=weeks.reset_index()
+    weeks=weeks.reindex(index=range(0, len(weeks)))
+    output_name = save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_most_important_features_"+arguments["<country_name>"]+".csv"
+    result_dataframe = pd.concat([weeks, imp_pages_values], axis=1).drop(["index"], axis=1)
+    result_dataframe.to_csv(output_name, index=False)
+
 # Print MSE of the two models
 mse = mean_squared_error(all_true_labels["incidence"].fillna(0), all_predicted_values)
 print("------------")
