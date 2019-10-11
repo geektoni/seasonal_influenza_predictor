@@ -4,7 +4,7 @@
 """Script which can be used to compare the results of two different influenza model
 
 Usage:
-  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>]
+  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>] [--save] [--no-graph]
 
   <baseline>      Data file of the first model
   <other_method>     Data file of the second model
@@ -72,10 +72,16 @@ if __name__ == "__main__":
     # Specify which columns we want to obtain from the dataframe
     printable_columns = []
     printable_columns.append("season")
+    printable_columns.append("mse")
+    printable_columns.append("pcc")
     printable_columns += ["imp_mse_{}".format(m) for m in args["<other_method>"]]
     printable_columns += ["imp_pcc_{}".format(m) for m in args["<other_method>"]]
 
     print(results[printable_columns])
+    if args["--save"]:
+        using_future = "future" if not args["--no-future"] else "no_future"
+        save_filename = "{}_{}_compare_results_{}_{}.csv".format(season_years, args["<baseline>"], country, using_future)
+        results[printable_columns].to_csv(os.path.join(".", save_filename))
 
     #### GENERATE THE GRAPH
     baseline_prediction_path = os.path.join(base_dir, args["<baseline>"], future, country)
@@ -120,4 +126,6 @@ if __name__ == "__main__":
     plt.xlabel("Year-Week")
     plt.ylabel("Incidence")
     plt.tight_layout()
-    plt.show()
+
+    if not args["--no-graph"]:
+        plt.show()
