@@ -42,6 +42,7 @@ if __name__ == "__main__":
     baseline_results_path= os.path.join(base_dir, args["<baseline>"], future, country)
 
     season_years = get_results_filename(baseline_results_path, country)
+    season_years_baseline = season_years
     baseline_result_file = os.path.join(baseline_results_path, "{}_information_{}.csv".format(season_years, country))
     baseline_results_df = pd.read_csv(baseline_result_file)
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     print(results[printable_columns])
     if args["--save"]:
         using_future = "future" if not args["--no-future"] else "no_future"
-        save_filename = "{}_{}_compare_results_{}_{}.csv".format(season_years, args["<baseline>"], country, using_future)
+        save_filename = "{}_{}_compare_results_{}_{}.csv".format(season_years_baseline, args["<baseline>"], country, using_future)
         results[printable_columns].to_csv(os.path.join(".", save_filename))
 
     #### GENERATE THE GRAPH
@@ -108,8 +109,8 @@ if __name__ == "__main__":
     prediction_results = pd.merge(baseline_prediction_df, other_prediction_df, on="week", how="outer")
 
     # Get only the weeks we want
-    start_year = season_years.split("-")[0] if not args["--start-year"] else args["--start-year"]
-    end_year = season_years.split("-")[1] if not args["--end-year"] else args["--end-year"]
+    start_year = season_years_baseline.split("-")[0] if not args["--start-year"] else args["--start-year"]
+    end_year = season_years_baseline.split("-")[1] if not args["--end-year"] else args["--end-year"]
     start_season = prediction_results["week"] > start_year
     end_season = prediction_results["week"] < end_year
     total = start_season & end_season
