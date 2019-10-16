@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """Script which can be used to compare the results of two different influenza model
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     baseline_prediction_path = os.path.join(base_dir, args["<baseline>"], future, country)
     season_years = get_results_filename(baseline_prediction_path, country)
     baseline_prediction_file = os.path.join(baseline_prediction_path, "{}-prediction.csv".format(season_years))
-    baseline_prediction_df = pd.read_csv(baseline_prediction_file).rename(columns={"prediction": "prediction_{}".format(args["<baseline>"])})
+    baseline_prediction_df = pd.read_csv(baseline_prediction_file)[["prediction", "week", "incidence"]].rename(columns={"prediction": "prediction_{}".format(args["<baseline>"])})
 
     # Concat all the other results
     other_prediction_df = None
@@ -98,10 +97,10 @@ if __name__ == "__main__":
         other_prediction_file = os.path.join(other_prediction_path, "{}-prediction.csv".format(season_years))
 
         if other_prediction_df is None:
-            other_prediction_df = pd.read_csv(other_prediction_file).drop(["incidence"], axis=1)
+            other_prediction_df = pd.read_csv(other_prediction_file).drop(["incidence"], axis=1)[["prediction", "week"]]
             other_prediction_df = other_prediction_df.rename(columns={"prediction": "prediction_{}".format(other_result)})
         else:
-            current_other_prediction_df = pd.read_csv(other_prediction_file).drop(["incidence"], axis=1)
+            current_other_prediction_df = pd.read_csv(other_prediction_file).drop(["incidence"], axis=1)[["prediction", "week"]]
             current_other_prediction_df = current_other_prediction_df.rename(columns={"prediction": "prediction_{}".format(other_result)})
             other_prediction_df = pd.merge(other_prediction_df, current_other_prediction_df, on="week", how="outer")
 
@@ -122,8 +121,22 @@ if __name__ == "__main__":
     if (step ==0):
         step=1
 
-    ax = sns.lineplot(data=prediction_results.drop(["week"], axis=1), style="event", dashes=False)
-    plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90)
+    index=1
+    all_methods = [args["<baseline>"]]+args["<other_method>"]
+    fig = plt.figure()
+    end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
+    for other_result in all_methods:
+        plt.subplot(len(all_methods), 1, index)
+        prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
+        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False)
+        index+=1
+        plt.title("Prediction with {}".format(other_result))
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        ax.set_xticks([])
+        for i in end_of_seasons:
+            plt.axvline(x=i, color='k', linestyle='--')
+
+    plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
     plt.xlabel("Year-Week")
     plt.ylabel("Incidence")
     plt.tight_layout()
