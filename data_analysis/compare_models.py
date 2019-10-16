@@ -19,6 +19,7 @@ import numpy as np
 
 from sklearn.metrics import mean_squared_error
 
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -110,8 +111,8 @@ if __name__ == "__main__":
     # Get only the weeks we want
     start_year = season_years_baseline.split("-")[0] if not args["--start-year"] else args["--start-year"]
     end_year = season_years_baseline.split("-")[1] if not args["--end-year"] else args["--end-year"]
-    start_season = prediction_results["week"] > start_year
-    end_season = prediction_results["week"] < end_year
+    start_season = prediction_results["week"] >= start_year
+    end_season = prediction_results["week"] <= str(int(end_year)+1)
     total = start_season & end_season
 
     prediction_results = prediction_results[total]
@@ -122,24 +123,33 @@ if __name__ == "__main__":
         step=1
 
     index=1
+    lines = []
+    labels = []
     all_methods = [args["<baseline>"]]+args["<other_method>"]
     fig = plt.figure()
+    #palette = sns.color_palette("Paired")
+    palette = ["red", "blue", "green", "yellow", "green"]
     end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
     for other_result in all_methods:
         plt.subplot(len(all_methods), 1, index)
         prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
-        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False)
+        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]],  legend=False)
+        lines.append(ax.get_lines()[1])
+        labels.append("prediction_{}".format(other_result))
         index+=1
-        plt.title("Prediction with {}".format(other_result))
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         ax.set_xticks([])
+        plt.ylabel("Incidence",  fontsize=12)
         for i in end_of_seasons:
             plt.axvline(x=i, color='k', linestyle='--')
 
+    lines.append(ax.get_lines()[0])
+    labels.append("incidence")
+
     plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
-    plt.xlabel("Year-Week")
-    plt.ylabel("Incidence")
-    plt.tight_layout()
+    plt.xlabel("Year-Week", fontsize=12)
+    #fig.tight_layout(rect=[0.1,0,1, 1])
+    plt.figlegend(lines, labels, loc = 'lower center', ncol=5, labelspacing=0., fontsize=13)
+    fig.tight_layout()
 
     if not args["--no-graph"]:
         plt.show()
