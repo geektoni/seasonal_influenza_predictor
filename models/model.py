@@ -34,12 +34,16 @@ from docopt import docopt
 
 from models_utils import *
 
-from pyglmnet import GLMCV
+try :
+ from pyglmnet import GLMCV
 
-import glmnet_python
-from cvglmnetCoef import cvglmnetCoef
-from cvglmnetPredict import cvglmnetPredict
-from cvglmnet import cvglmnet
+ import glmnet_python
+ from cvglmnetCoef import cvglmnetCoef
+ from cvglmnetPredict import cvglmnetPredict
+ from cvglmnet import cvglmnet
+
+except ImportError as e:
+    print("I was not able to import GLM model. You will run into errors if used.")
 
 # Try to import matplotlib (if we are running on a system without Tkinter
 # then we will just skip it)
@@ -267,7 +271,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
                              mean_squared_error(labels_test['incidence'].fillna(0), result),
                              np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
                              ])
-        for p in get_important_pages(current_weighted_features, 20):
+        for p in get_important_pages(current_weighted_features, len(current_weighted_features)):
             top_features_writer.writerow([str(year_selected-1)+"-"+str(year_selected),
                                           arguments["<country_name>"],
                                           p[0],
