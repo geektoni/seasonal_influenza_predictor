@@ -5,11 +5,11 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-country_list=("belgium" "germany" "austria" "italy" "netherlands")
-year_list=("2010-2016" "2008-2016" "2013-2016" "2008-2016" "2010-2016")
-year_list_future=("2010-2019" "2008-2019" "2013-2019" "2008-2019" "2010-2019")
-type_of_exec=("no-future" "future")
-type_of_data=("old_data" "new_data" "pageviews" "cyclerank" "cyclerank_pageviews")
+country_list=("belgium" "germany" "italy" "netherlands" "USA")
+year_list=("2011-2016" "2008-2016" "2008-2016" "2010-2016" "2008-2013")
+year_list_future=("2011-2019" "2008-2019" "2008-2019" "2010-2019" "2008-2013")
+type_of_exec=("future" "no-future" )
+type_of_data=("new_data" "cyclerank" "old_data" "pageviews" "cyclerank_pageviews")
 base_dir="./complete_results"
 
 for data_type in ${type_of_data[@]}
@@ -20,6 +20,9 @@ do
 	    for c in ${country_list[@]}
 	    do
 
+        if [ $c == "USA" ] && [ $type_exec != "old_data"] && [ $type_exec != "pageviews"]; then
+          continue
+        fi
             # Create the directory, if it doesn't exists
 	        directory=$base_dir/$data_type/$type_exec/$c/
     	    if [ ! -d $base_dir/$c ]; then
@@ -32,7 +35,7 @@ do
             elif [ $data_type == "new_data" ] || [ $data_type == "cyclerank" ]; then
                 start_year="$(echo ${year_list_future[$counter]} | cut -f 1 -d -)"
                 end_year="$(echo ${year_list_future[$counter]} | cut -f 2 -d -)"
-			else
+			      else
                 start_year="2016"
                 end_year="2019"
             fi
@@ -42,9 +45,14 @@ do
             incidence_data_type=""
             keywords_ending=""
             if [ $data_type == "cyclerank" ]; then
-             	incidence_data_type="new_data"
-             	keywords_ending="cyclerank_${c}"
+              if [ $c == "USA" ]; then
+                incidence_data_type="old_data"
+              else
+                incidence_data_type="new_data"
+              fi
+              keywords_ending="cyclerank_${c}"
 			      elif [ $data_type == "cyclerank_pageviews" ]; then
+
 				          incidence_data_type="pageviews"
                   keywords_ending="cyclerank_${c}"
             else
