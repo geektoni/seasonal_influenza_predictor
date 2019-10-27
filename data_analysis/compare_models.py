@@ -23,6 +23,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def correct_name(value):
+    if value == "new_data":
+        return "LASSO (Categories)"
+    elif value == "cyclerank":
+        return "LASSO (Cyclerank)"
+    elif value == "pageviews":
+        return "LASSO (Categories)"
+    elif value == "cyclerank_pageviews":
+        return "LASSO (Cyclerank)"
+
+
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
     season_years = os.path.basename(files[0]).split("_")[0]
@@ -126,7 +137,7 @@ if __name__ == "__main__":
     lines = []
     labels = []
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    fig = plt.figure()
+    fig = plt.figure(figsize=(7,6))
     #palette = sns.color_palette("Paired")
     palette = ["red", "blue", "green", "yellow", "green"]
     end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
@@ -135,21 +146,24 @@ if __name__ == "__main__":
         prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
         ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]],  legend=False)
         lines.append(ax.get_lines()[1])
-        labels.append("prediction_{}".format(other_result))
+        labels.append("Prediction {}".format(correct_name(other_result)))
         index+=1
         ax.set_xticks([])
-        plt.ylabel("Incidence",  fontsize=12)
+        plt.ylabel("ILI Incidence",  fontsize=12)
         for i in end_of_seasons:
             plt.axvline(x=i, color='k', linestyle='--')
 
     lines.append(ax.get_lines()[0])
-    labels.append("incidence")
+    labels.append("ILI Incidence (over 100000 people)")
 
     plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
     plt.xlabel("Year-Week", fontsize=12)
     #fig.tight_layout(rect=[0.1,0,1, 1])
-    plt.figlegend(lines, labels, loc = 'lower center', ncol=5, labelspacing=0., fontsize=13)
-    fig.tight_layout()
+    lgd = plt.figlegend(lines, labels, loc = 'lower center', ncol=5, labelspacing=0., fontsize=13)
 
     if not args["--no-graph"]:
+        fig.tight_layout()
         plt.show()
+    else:
+        save_filename = "{}_{}_compare_results_{}.png".format(season_years_baseline, args["<baseline>"], country)
+        plt.savefig(save_filename, dpi=200, bbox_extra_artists=(lgd,), bbox_inches='tight')
