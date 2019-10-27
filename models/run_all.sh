@@ -8,8 +8,7 @@ IFS=$'\n\t'
 country_list=("belgium" "germany" "italy" "netherlands" "USA")
 year_list=("2011-2016" "2008-2016" "2008-2016" "2010-2016" "2008-2013")
 year_list_future=("2011-2019" "2008-2019" "2008-2019" "2010-2019" "2008-2013")
-type_of_exec=("future" "no-future" )
-type_of_data=("new_data" "cyclerank" "old_data" "pageviews" "cyclerank_pageviews")
+type_of_exec=("future" "no-future")
 base_dir="./complete_results"
 
 for data_type in ${type_of_data[@]}
@@ -21,7 +20,7 @@ do
 	    do
 
         if [ $c == "USA" ] && [ $type_exec != "old_data"] && [ $type_exec != "pageviews"]; then
-          continue
+          break
         fi
             # Create the directory, if it doesn't exists
 	        directory=$base_dir/$data_type/$type_exec/$c/
