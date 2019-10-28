@@ -8,6 +8,7 @@ IFS=$'\n\t'
 country_list=("belgium" "germany" "italy" "netherlands" "USA")
 year_list=("2011-2016" "2008-2016" "2008-2016" "2010-2016" "2008-2013")
 year_list_future=("2011-2019" "2008-2019" "2008-2019" "2010-2019" "2008-2013")
+type_of_data=("cyclerank" "new_data" "cyclerank_pageviews" "pageviews" "old_data")
 type_of_exec=("future" "no-future")
 base_dir="./complete_results"
 
