@@ -45,7 +45,7 @@ if __name__ == "__main__":
     args = docopt(__doc__)
 
     # Read some config variables
-    base_dir = args["--basedir"] if args["--basedir"] else "../models/complete_results"
+    base_dir = args["--basedir"] if args["--basedir"] else "../complete_results"
     country = args["--country"] if args["--country"] else "italy"
     future = "no-future" if args["--no-future"] else "future"
 
