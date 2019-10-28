@@ -22,6 +22,7 @@ from sklearn.metrics import mean_squared_error
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set()
 
 def correct_name(value):
     if value == "new_data":
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     start_year = season_years_baseline.split("-")[0] if not args["--start-year"] else args["--start-year"]
     end_year = season_years_baseline.split("-")[1] if not args["--end-year"] else args["--end-year"]
     start_season = prediction_results["week"] >= start_year
-    end_season = prediction_results["week"] <= str(int(end_year)+1)
+    end_season = prediction_results["week"] <= str(int(end_year.split("-")[0])+1)+"-"+end_year.split("-")[1]
     total = start_season & end_season
 
     prediction_results = prediction_results[total]
@@ -133,37 +134,43 @@ if __name__ == "__main__":
     if (step ==0):
         step=1
 
+    # Get max y value
+    max_y_value = int(baseline_prediction_df["incidence"].max())
+    step_y = int(max_y_value*0.05) if int(max_y_value*0.05) != 0 else 1
+
     index=1
     lines = []
     labels = []
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    fig = plt.figure(figsize=(7,6))
+    fig = plt.figure(figsize=(9,6))
     #palette = sns.color_palette("Paired")
     palette = ["red", "blue", "green", "yellow", "green"]
     end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
     for other_result in all_methods:
         plt.subplot(len(all_methods), 1, index)
         prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
-        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]],  legend=False)
+        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]], legend=False)
         lines.append(ax.get_lines()[1])
         labels.append("Prediction {}".format(correct_name(other_result)))
         index+=1
-        ax.set_xticks([])
-        plt.ylabel("ILI Incidence",  fontsize=12)
+        ax.set_xticks([i for i in np.arange(len(prediction_results["week"]), step=step)])
+        ax.set_xticklabels([" " for i in np.arange(len(prediction_results["week"]), step=step)])
+        plt.ylabel("ILI Incidence",  fontsize=11)
         for i in end_of_seasons:
             plt.axvline(x=i, color='k', linestyle='--')
+
+        plt.ylim(0, max_y_value+2)
 
     lines.append(ax.get_lines()[0])
     labels.append("ILI Incidence (over 100000 people)")
 
     plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
-    plt.xlabel("Year-Week", fontsize=12)
-    #fig.tight_layout(rect=[0.1,0,1, 1])
-    lgd = plt.figlegend(lines, labels, loc = 'lower center', ncol=5, labelspacing=0., fontsize=13)
+    plt.xlabel("Year-Week", fontsize=11)
+    plt.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=3, fontsize=11)
 
     if not args["--no-graph"]:
         fig.tight_layout()
         plt.show()
     else:
-        save_filename = "{}_{}_compare_results_{}.png".format(season_years_baseline, args["<baseline>"], country)
-        plt.savefig(save_filename, dpi=200, bbox_extra_artists=(lgd,), bbox_inches='tight')
+        save_filename = "{}_{}_compare_results_{}.png".format(start_year, end_year, args["<baseline>"], country)
+        plt.savefig(save_filename, dpi=200, bbox_inches='tight')
