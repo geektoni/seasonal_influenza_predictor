@@ -25,7 +25,7 @@ import seaborn as sns
 sns.set()
 
 def correct_name(value):
-    if value == "new_data":
+    if value == "new_data" or value == "old_data":
         return "LASSO (Categories)"
     elif value == "cyclerank":
         return "LASSO (Cyclerank)"
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     season_years = get_results_filename(baseline_results_path, country)
     season_years_baseline = season_years
     baseline_result_file = os.path.join(baseline_results_path, "{}_information_{}.csv".format(season_years, country))
-    baseline_results_df = pd.read_csv(baseline_result_file)
+    baseline_results_df = pd.read_csv(baseline_result_file).rename(columns={"mse": "mse_{}".format(args["<baseline>"]), "pcc":"pcc_{}".format(args["<baseline>"])})
 
     # Concat all the other results
     other_results_df = None
@@ -79,22 +79,27 @@ if __name__ == "__main__":
     # FIXME: There may be season for which the mse and pcc are NaN (because maybe we are
     # comparing new_data with old_data). Those lines must be written as nan in the final result.
     for other_results in args["<other_method>"]:
-        results["imp_mse_{}".format(other_results)] = np.where((results["mse"] - results["mse_{}".format(other_results)])>=0, 'yes', 'no')
-        results["imp_pcc_{}".format(other_results)] = np.where((results["pcc"] - results["pcc_{}".format(other_results)])>=0, 'no', 'yes')
+        #results["imp_mse_{}".format(other_results)] = np.where((results["mse"] - results["mse_{}".format(other_results)])>=0, 'yes', 'no')
+        #results["imp_pcc_{}".format(other_results)] = np.where((results["pcc"] - results["pcc_{}".format(other_results)])>=0, 'no', 'yes')
+        results["ΔMSE ({})".format(other_results)] = results["mse_{}".format(args["<baseline>"])] - results["mse_{}".format(other_results)]
+        results["ΔPCC ({})".format(other_results)] = results["pcc_{}".format(args["<baseline>"])] - results["pcc_{}".format(other_results)]
+
 
     # Specify which columns we want to obtain from the dataframe
+    baseline_name = "pagecounts+pageviews" if args["<baseline>"] == "new_data" else "pageviews"
     printable_columns = []
     printable_columns.append("season")
-    printable_columns.append("mse")
-    printable_columns.append("pcc")
-    printable_columns += ["imp_mse_{}".format(m) for m in args["<other_method>"]]
-    printable_columns += ["imp_pcc_{}".format(m) for m in args["<other_method>"]]
+    printable_columns.append("MSE ({})".format(baseline_name))
+    printable_columns.append("PCC ({})".format(baseline_name))
+    printable_columns += ["ΔMSE ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["ΔPCC ({})".format(m) for m in args["<other_method>"]]
+
+
+    results = results.rename(columns={
+    "mse_{}".format(args["<baseline>"]): "MSE ({})".format(baseline_name),
+    "pcc_{}".format(args["<baseline>"]): "PCC ({})".format(baseline_name)})
 
     print(results[printable_columns])
-    if args["--save"]:
-        using_future = "future" if not args["--no-future"] else "no_future"
-        save_filename = "{}_{}_compare_results_{}_{}.csv".format(season_years_baseline, args["<baseline>"], country, using_future)
-        results[printable_columns].to_csv(os.path.join(".", save_filename))
 
     #### GENERATE THE GRAPH
     baseline_prediction_path = os.path.join(base_dir, args["<baseline>"], future, country)
@@ -119,10 +124,11 @@ if __name__ == "__main__":
 
     # Total results
     prediction_results = pd.merge(baseline_prediction_df, other_prediction_df, on="week", how="outer")
+    prediction_results = prediction_results.dropna()
 
     # Get only the weeks we want
-    start_year = season_years_baseline.split("-")[0] if not args["--start-year"] else args["--start-year"]
-    end_year = season_years_baseline.split("-")[1] if not args["--end-year"] else args["--end-year"]
+    start_year = season_years_baseline.split("-")[0]+"-42" if not args["--start-year"] else args["--start-year"]
+    end_year = season_years_baseline.split("-")[1]+"-15" if not args["--end-year"] else args["--end-year"]
     start_season = prediction_results["week"] >= start_year
     end_season = prediction_results["week"] <= str(int(end_year.split("-")[0])+1)+"-"+end_year.split("-")[1]
     total = start_season & end_season
@@ -135,14 +141,16 @@ if __name__ == "__main__":
         step=1
 
     # Get max y value
-    max_y_value = int(baseline_prediction_df["incidence"].max())
+    min_values = prediction_results.min()
+    max_y_value = int(prediction_results.drop(["week"], axis=1).max().max())
+    min_y_value = int(prediction_results.drop(["week"], axis=1).min().min())
     step_y = int(max_y_value*0.05) if int(max_y_value*0.05) != 0 else 1
 
     index=1
     lines = []
     labels = []
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    fig = plt.figure(figsize=(9,6))
+    fig = plt.figure(figsize=(11,6))
     #palette = sns.color_palette("Paired")
     palette = ["red", "blue", "green", "yellow", "green"]
     end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
@@ -151,18 +159,17 @@ if __name__ == "__main__":
         prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
         ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]], legend=False)
         lines.append(ax.get_lines()[1])
-        labels.append("Prediction {}".format(correct_name(other_result)))
+        labels.append("{}".format(correct_name(other_result)))
         index+=1
         ax.set_xticks([i for i in np.arange(len(prediction_results["week"]), step=step)])
         ax.set_xticklabels([" " for i in np.arange(len(prediction_results["week"]), step=step)])
         plt.ylabel("ILI Incidence",  fontsize=11)
         for i in end_of_seasons:
             plt.axvline(x=i, color='k', linestyle='--')
-
-        plt.ylim(0, max_y_value+2)
+        plt.ylim(min_y_value-2, max_y_value+2)
 
     lines.append(ax.get_lines()[0])
-    labels.append("ILI Incidence (over 100000 people)")
+    labels.append("ILI Incidence")
 
     plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
     plt.xlabel("Year-Week", fontsize=11)
@@ -172,5 +179,8 @@ if __name__ == "__main__":
         fig.tight_layout()
         plt.show()
     else:
-        save_filename = "{}_{}_compare_results_{}.png".format(start_year, end_year, args["<baseline>"], country)
+        save_filename = "{}_{}_compare_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
         plt.savefig(save_filename, dpi=200, bbox_inches='tight')
+
+        save_filename = "{}_{}_compare_results_{}_{}.csv".format(start_year, end_year, args["<baseline>"], country)
+        results[printable_columns].to_csv(os.path.join(".", save_filename), index=False, index_label=False)

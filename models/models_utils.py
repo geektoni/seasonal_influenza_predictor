@@ -289,6 +289,23 @@ def stz(data):
     dataset_imp[np.isnan(dataset_imp)] = 0
     return dataset_imp
 
+def stz_zero(data):
+    """
+    Standardize between [-1, 1] the data give by applying this
+    formula to each feature:
+
+    x_new = (x-dataset_mean)/(dataset_max - dataset_min)
+
+    :param data: the data we want to standardize
+    :return: the standardized data
+    """
+    dmax = data.max(axis=0)
+    dmin = data.min(axis=0)
+    dmax_min = dmax - dmin
+    dataset_imp = (data - dmin) / dmax_min
+    dataset_imp[np.isnan(dataset_imp)] = 0
+    return dataset_imp
+
 def get_important_pages(important_pages, top=10):
     """
     Get the most important feature selected by the model.
