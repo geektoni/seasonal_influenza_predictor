@@ -21,7 +21,8 @@ do
 	    do
 
         if [ $c == "USA" ] && [ $type_exec != "old_data" ] && [ $type_exec != "pageviews" ]; then
-          break
+          counter=$counter+1
+          continue
         fi
             # Create the directory, if it doesn't exists
 	        directory=$base_dir/$data_type/$type_exec/$c/
