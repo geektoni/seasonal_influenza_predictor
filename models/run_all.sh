@@ -20,7 +20,7 @@ do
 	    for c in ${country_list[@]}
 	    do
 
-        if [ $c == "USA" ] && [ $type_exec != "old_data"] && [ $type_exec != "pageviews" ]; then
+        if [ $c == "USA" ] && [ $type_exec != "old_data" ] && [ $type_exec != "pageviews" ]; then
           break
         fi
             # Create the directory, if it doesn't exists
