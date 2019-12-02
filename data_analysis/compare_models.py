@@ -81,9 +81,10 @@ if __name__ == "__main__":
     for other_results in args["<other_method>"]:
         #results["imp_mse_{}".format(other_results)] = np.where((results["mse"] - results["mse_{}".format(other_results)])>=0, 'yes', 'no')
         #results["imp_pcc_{}".format(other_results)] = np.where((results["pcc"] - results["pcc_{}".format(other_results)])>=0, 'no', 'yes')
-        results["ΔMSE ({})".format(other_results)] = results["mse_{}".format(args["<baseline>"])] - results["mse_{}".format(other_results)]
-        results["ΔPCC ({})".format(other_results)] = results["pcc_{}".format(args["<baseline>"])] - results["pcc_{}".format(other_results)]
-
+        #results["ΔMSE ({})".format(other_results)] = results["mse_{}".format(args["<baseline>"])] - results["mse_{}".format(other_results)]
+        #results["ΔPCC ({})".format(other_results)] = results["pcc_{}".format(args["<baseline>"])] - results["pcc_{}".format(other_results)]
+        results["MSE ({})".format(other_results)] = results["mse_{}".format(other_results)]
+        results["PCC ({})".format(other_results)] = results["pcc_{}".format(other_results)]
 
     # Specify which columns we want to obtain from the dataframe
     baseline_name = "pagecounts+pageviews" if args["<baseline>"] == "new_data" else "pageviews"
@@ -91,8 +92,8 @@ if __name__ == "__main__":
     printable_columns.append("season")
     printable_columns.append("MSE ({})".format(baseline_name))
     printable_columns.append("PCC ({})".format(baseline_name))
-    printable_columns += ["ΔMSE ({})".format(m) for m in args["<other_method>"]]
-    printable_columns += ["ΔPCC ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["MSE ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["PCC ({})".format(m) for m in args["<other_method>"]]
 
 
     results = results.rename(columns={
@@ -183,4 +184,4 @@ if __name__ == "__main__":
         plt.savefig(save_filename, dpi=200, bbox_inches='tight')
 
         save_filename = "{}_{}_compare_results_{}_{}.csv".format(start_year, end_year, args["<baseline>"], country)
-        results[printable_columns].to_csv(os.path.join(".", save_filename), index=False, index_label=False)
+        results[printable_columns].to_csv(os.path.join(".", save_filename), index=False, index_label=False, float_format='%.4f')

@@ -22,11 +22,30 @@ from sklearn.metrics import mean_squared_error
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set()
+
+from models.models_utils import generate, stz_zero, get_important_pages
 
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
     season_years = os.path.basename(files[0]).split("_")[0]
     return season_years
+
+def generate_dictionary(f, model):
+    result = dict()
+
+    unique_years = results.season.unique()
+    for y in unique_years:
+        f_tmp = f[f.season == y]
+        for index, row in f_tmp.iterrows():
+            page_name = str(row["page_name_"+model])
+            weigth = float(row["value_"+model])
+
+            if page_name in result:
+                result[page_name].append(weigth)
+            else:
+                result[page_name] = [weigth]
+    return result
 
 if __name__ == "__main__":
 
@@ -57,14 +76,14 @@ if __name__ == "__main__":
     season_years = get_results_filename(baseline_results_path, country)
     season_years_baseline = season_years
     baseline_result_file = os.path.join(baseline_results_path, "{}_features_{}.csv".format(season_years, country))
-    baseline_results_df = pd.read_csv(baseline_result_file)[["season", "page_name", "value"]]
+    baseline_results_df = pd.read_csv(baseline_result_file)[["season", "page_name", "value"]].rename(columns={"page_name": "page_name_{}".format(args["<baseline>"]), "value":"value_{}".format(args["<baseline>"])})
 
     # Concat all the other results
     other_results_df = None
     for other_results in args["<other_method>"]:
-        other_results_path = baseline_results_path= os.path.join(base_dir, other_results, future, country)
-        season_years = get_results_filename(baseline_results_path, country)
-        other_result_file = os.path.join(baseline_results_path, "{}_features_{}.csv".format(season_years, country))
+        other_results_path = os.path.join(base_dir, other_results, future, country)
+        season_years = get_results_filename(other_results_path, country)
+        other_result_file = os.path.join(other_results_path, "{}_features_{}.csv".format(season_years, country))
 
         if other_results_df is None:
             other_results_df = pd.read_csv(other_result_file)[["page_name", "value"]]
@@ -85,13 +104,103 @@ if __name__ == "__main__":
     for y in unique_years:
         selected = results[results.season == y]
         for m in args["<other_method>"]:
-            common = selected[selected.page_name == selected["page_name_{}".format(m)]]
-            total_common += list(common.page_name.unique())
-            print("{}, {} -> Common Pages = {}".format(y, m, len(common.page_name.unique())))
+            common = selected[selected["page_name_{}".format(args["<baseline>"])] == selected["page_name_{}".format(m)]]
+            total_common += list(common["page_name_{}".format(args["<baseline>"])].unique())
+            print("{}, {} -> Common Pages = {}".format(y, m, len(common["page_name_{}".format(args["<baseline>"])].unique())))
 
-            how_many_in_common_keywords = set.intersection(set(selected.page_name), common_keywords)
+            how_many_in_common_keywords = set.intersection(set(selected["page_name_{}".format(args["<baseline>"])]), common_keywords)
             print("{}, {} -> Common Keywords = {}".format(y, m, len(how_many_in_common_keywords)))
             print("")
+
+
+    # Get only the weeks we want
+    incidence = pd.read_csv(os.path.join(base_dir, args["<baseline>"], future, country, "{}-prediction.csv".format(season_years)))[["week", "incidence"]]
+    start_year = season_years_baseline.split("-")[0]+"-42" if not args["--start-year"] else args["--start-year"]
+    end_year = season_years_baseline.split("-")[1]+"-15" if not args["--end-year"] else args["--end-year"]
+    start_season = incidence["week"] >= start_year
+    end_season = incidence["week"] <= str(int(end_year.split("-")[0])+1)+"-"+end_year.split("-")[1]
+    total = start_season & end_season
+
+    all_methods = [args["<baseline>"]]+args["<other_method>"]
+    fig = plt.figure(figsize=(9,6))
+    index = 1
+    incidence = incidence[total]
+    incidence = incidence.reset_index()
+    incidence = incidence.drop(["index"], axis=1)
+    weeks = incidence["week"]
+    incidence = stz_zero(incidence["incidence"])
+
+    step = int(len(weeks)*0.05)
+    if (step == 0):
+        step=1
+
+    end_of_seasons = [i for i, n in enumerate(weeks.to_list()) if n.split("-")[1] == "15"]
+
+    fig = plt.figure(figsize=(11,6))
+    for method in all_methods:
+
+        #year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
+        year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
+
+        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:3])]
+        most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
+        most_important_features = stz_zero(most_important_features)
+        most_important_features = most_important_features[total]
+        most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
+        most_important_features = pd.concat([incidence, most_important_features], axis=1)
+        plt.subplot(len(all_methods), 1, index)
+        ax = sns.lineplot(data=most_important_features, style="event", dashes=False)
+        ax.set_title("{}".format(method), pad=5)
+        plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=12)
+        index=index+1
+
+        ax.set_xticks([i for i in np.arange(len(weeks), step=step)])
+        ax.set_xticklabels([" " for i in np.arange(len(weeks), step=step)])
+        plt.ylabel("Pageviews Variation [0, 1]",  fontsize=12)
+        for i in end_of_seasons:
+            plt.axvline(x=i, color='k', linestyle='--')
+
+        plt.ylim(-0.1, 1.5)
+
+    if args["--no-graph"]:
+        save_filename = "{}_{}_feature_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
+        plt.savefig(save_filename, dpi=200, bbox_inches='tight')
+
+    plt.xticks(np.arange(len(weeks), step=step), weeks.iloc[::step], rotation=90, fontsize=12)
+    plt.xlabel("Year-Week", fontsize=12)
+
+    plt.figure()
+    sns.set(font_scale=1.4)
+    index=1
+    for method in all_methods:
+
+        year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
+        year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
+
+        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:5])]
+        most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
+        most_important_features = stz_zero(most_important_features)
+        most_important_features = most_important_features[total]
+        most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
+        most_important_features = pd.concat([incidence, most_important_features], axis=1)
+        plt.subplot(len(all_methods), 1, index)
+        print(most_important_features.columns)
+
+        palette = sns.color_palette("Blues")
+        if index == len(all_methods):
+            ax = sns.heatmap(data=most_important_features.corr(), annot=True, xticklabels=True, cmap=palette)
+        else:
+            ax = sns.heatmap(data=most_important_features.corr(), annot=True, xticklabels=False, cmap=palette)
+        index=index+1
+
+
+    if not args["--no-graph"]:
+        fig.tight_layout()
+        plt.show()
+    else:
+        save_filename = "{}_{}_correlation_matrix_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
+        plt.savefig(save_filename, dpi=200, bbox_inches='tight')
+
 
     # Print overall common features used:
     print("Total common pages used by the models")
