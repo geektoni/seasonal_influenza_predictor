@@ -56,7 +56,15 @@ if __name__ == "__main__":
     season_years = get_results_filename(baseline_results_path, country)
     season_years_baseline = season_years
     baseline_result_file = os.path.join(baseline_results_path, "{}_information_{}.csv".format(season_years, country))
-    baseline_results_df = pd.read_csv(baseline_result_file).rename(columns={"mse": "mse_{}".format(args["<baseline>"]), "pcc":"pcc_{}".format(args["<baseline>"])})
+    baseline_results_df = pd.read_csv(baseline_result_file).rename(columns=
+                                                                   {"mse": "mse_{}".format(args["<baseline>"]),
+                                                                    "pcc":"pcc_{}".format(args["<baseline>"]),
+                                                                    "predicted_influenza_peak" : "predicted_influenza_peak_{}".format(args["<baseline>"]),
+                                                                    "predicted_influenza_peak_value": "predicted_influenza_peak_value_{}".format(
+                                                                        args["<baseline>"])
+                                                                    })
+
+    print(baseline_results_df.columns)
 
     # Concat all the other results
     other_results_df = None
@@ -66,11 +74,24 @@ if __name__ == "__main__":
         other_result_file = os.path.join(baseline_results_path, "{}_information_{}.csv".format(season_years, country))
 
         if other_results_df is None:
-            other_results_df = pd.read_csv(other_result_file)
-            other_results_df = other_results_df.rename(columns={"mse": "mse_{}".format(other_results), "pcc":"pcc_{}".format(other_results)})
+            other_results_df = pd.read_csv(other_result_file).drop(["real_influenza_peak_value", "real_influenza_peak"], axis=1)
+            other_results_df = other_results_df.rename(columns={"mse": "mse_{}".format(other_results),
+                                                                        "pcc":"pcc_{}".format(other_results),
+                                                                        "predicted_influenza_peak": "predicted_influenza_peak_{}".format(
+                                                                            other_results),
+                                                                        "predicted_influenza_peak_value": "predicted_influenza_peak_value_{}".format(
+                                                                            other_results)
+                                                                        })
         else:
-            current_other_results_df = pd.read_csv(other_result_file)
-            current_other_results_df = current_other_results_df.rename(columns={"mse": "mse_{}".format(other_results), "pcc":"pcc_{}".format(other_results)})
+            current_other_results_df = pd.read_csv(other_result_file).drop(["real_influenza_peak_value", "real_influenza_peak"], axis=1)
+            current_other_results_df = current_other_results_df.rename(columns=
+                                                                       {"mse": "mse_{}".format(other_results),
+                                                                        "pcc":"pcc_{}".format(other_results),
+                                                                        "predicted_influenza_peak": "predicted_influenza_peak_{}".format(
+                                                                            other_results),
+                                                                        "predicted_influenza_peak_value": "predicted_influenza_peak_value_{}".format(
+                                                                            other_results)
+                                                                        })
             other_results_df = pd.merge(other_results_df, current_other_results_df, on="season", how="outer")
 
     # Total results
@@ -85,22 +106,41 @@ if __name__ == "__main__":
         #results["ΔPCC ({})".format(other_results)] = results["pcc_{}".format(args["<baseline>"])] - results["pcc_{}".format(other_results)]
         results["MSE ({})".format(other_results)] = results["mse_{}".format(other_results)]
         results["PCC ({})".format(other_results)] = results["pcc_{}".format(other_results)]
+        results["Predicted Peak ({})".format(other_results)] = results["predicted_influenza_peak_{}".format(other_results)]
+        results["Real Peak GT"] = results["real_influenza_peak"]
+        results["Peak agree with GT ({})".format(other_results)] = np.where(results["predicted_influenza_peak_{}".format(other_results)] == results["real_influenza_peak"], 'yes', 'no')
+        results["Difference with GT Peak value ({})".format(other_results)] = results["real_influenza_peak_value"]-results["predicted_influenza_peak_value_{}".format(other_results)]
+
+    baseline_name = "pagecounts+pageviews" if args["<baseline>"] == "new_data" else "pageviews"
+
+    results["Peak agree with GT ({})".format(baseline_name)] = np.where(
+        results["predicted_influenza_peak_{}".format(args["<baseline>"])] == results["real_influenza_peak"], 'yes',
+        'no')
+    results["Difference with GT Peak value ({})".format(baseline_name)] = results["real_influenza_peak_value"] - results["predicted_influenza_peak_value_{}".format(args["<baseline>"])]
 
     # Specify which columns we want to obtain from the dataframe
-    baseline_name = "pagecounts+pageviews" if args["<baseline>"] == "new_data" else "pageviews"
     printable_columns = []
     printable_columns.append("season")
     printable_columns.append("MSE ({})".format(baseline_name))
-    printable_columns.append("PCC ({})".format(baseline_name))
     printable_columns += ["MSE ({})".format(m) for m in args["<other_method>"]]
+    printable_columns.append("PCC ({})".format(baseline_name))
     printable_columns += ["PCC ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["Difference with GT Peak value ({})".format(baseline_name)]
+    printable_columns += ["Difference with GT Peak value ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["Predicted Peak ({})".format(baseline_name)]
+    printable_columns += ["Predicted Peak ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["Real Peak GT"]
+    printable_columns.append("Peak agree with GT ({})".format(baseline_name))
+    printable_columns += ["Peak agree with GT ({})".format(m) for m in args["<other_method>"]]
+
 
 
     results = results.rename(columns={
     "mse_{}".format(args["<baseline>"]): "MSE ({})".format(baseline_name),
-    "pcc_{}".format(args["<baseline>"]): "PCC ({})".format(baseline_name)})
+    "pcc_{}".format(args["<baseline>"]): "PCC ({})".format(baseline_name),
+    "predicted_influenza_peak_{}".format(args["<baseline>"]): "Predicted Peak ({})".format(baseline_name)})
 
-    print(results[printable_columns])
+    print(results[printable_columns].transpose())
 
     #### GENERATE THE GRAPH
     baseline_prediction_path = os.path.join(base_dir, args["<baseline>"], future, country)
@@ -164,7 +204,7 @@ if __name__ == "__main__":
         index+=1
         ax.set_xticks([i for i in np.arange(len(prediction_results["week"]), step=step)])
         ax.set_xticklabels([" " for i in np.arange(len(prediction_results["week"]), step=step)])
-        plt.ylabel("ILI Incidence",  fontsize=11)
+        plt.ylabel("ILI Incidence",  fontsize=12)
         for i in end_of_seasons:
             plt.axvline(x=i, color='k', linestyle='--')
         plt.ylim(min_y_value-2, max_y_value+2)
@@ -172,9 +212,9 @@ if __name__ == "__main__":
     lines.append(ax.get_lines()[0])
     labels.append("ILI Incidence")
 
-    plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=9)
-    plt.xlabel("Year-Week", fontsize=11)
-    plt.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=3, fontsize=11)
+    plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=12)
+    plt.xlabel("Year-Week", fontsize=12)
+    plt.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=3, fontsize=12)
 
     if not args["--no-graph"]:
         fig.tight_layout()

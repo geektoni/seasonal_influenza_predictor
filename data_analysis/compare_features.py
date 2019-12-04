@@ -86,18 +86,30 @@ if __name__ == "__main__":
         other_result_file = os.path.join(other_results_path, "{}_features_{}.csv".format(season_years, country))
 
         if other_results_df is None:
-            other_results_df = pd.read_csv(other_result_file)[["page_name", "value"]]
+            other_results_df = pd.read_csv(other_result_file)[["season", "page_name", "value"]]
             other_results_df = other_results_df.rename(columns={"page_name": "page_name_{}".format(other_results), "value":"value_{}".format(other_results)})
         else:
-            current_other_results_df = pd.read_csv(other_result_file)[["page_name", "value"]]
+            current_other_results_df = pd.read_csv(other_result_file)[["season", "page_name", "value"]]
             current_other_results_df = current_other_results_df.rename(columns={"page_name": "page_name_{}".format(other_results), "value":"value_{}".format(other_results)})
             other_results_df = pd.concat([other_results_df, current_other_results_df], axis=1)
 
     # Total results
-    results = pd.concat([baseline_results_df, other_results_df], axis=1)
+    results = pd.concat([baseline_results_df, other_results_df.drop(["season"], axis=1)], axis=1)
 
     # Count uniques years
     unique_years = results.season.unique()
+
+    # Compute how many features are different from zero
+    for m in args["<other_method>"]:
+        for i in unique_years:
+            total_features_used = other_results_df[other_results_df.season == i]["page_name_{}".format(m)].count()
+            print(i, m, total_features_used, total_features_used/len(keywords_cyclerank))
+            print("")
+
+    for i in unique_years:
+        total_features_used = baseline_results_df[baseline_results_df.season == i]["page_name_{}".format(args["<baseline>"])].count()
+        print(i, args["<baseline>"], total_features_used, total_features_used/len(keywords_standard))
+        print("")
 
     # Loop over the seasons and extract common pages
     total_common = []
@@ -121,6 +133,8 @@ if __name__ == "__main__":
     end_season = incidence["week"] <= str(int(end_year.split("-")[0])+1)+"-"+end_year.split("-")[1]
     total = start_season & end_season
 
+    max_features = 5
+
     all_methods = [args["<baseline>"]]+args["<other_method>"]
     fig = plt.figure(figsize=(9,6))
     index = 1
@@ -142,7 +156,7 @@ if __name__ == "__main__":
         #year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
         year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
 
-        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:3])]
+        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:max_features])]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
         most_important_features = stz_zero(most_important_features)
         most_important_features = most_important_features[total]
@@ -177,7 +191,7 @@ if __name__ == "__main__":
         year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
         year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
 
-        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:5])]
+        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:max_features])]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
         most_important_features = stz_zero(most_important_features)
         most_important_features = most_important_features[total]
