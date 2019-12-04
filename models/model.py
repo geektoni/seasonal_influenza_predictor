@@ -29,6 +29,7 @@ import csv
 
 from sklearn.linear_model import LassoCV, ElasticNetCV
 from sklearn.metrics import r2_score
+from scipy import stats
 from tabulate import tabulate
 from docopt import docopt
 
@@ -121,7 +122,7 @@ mse_seasons = []
 if arguments["--f"]:
     csvfile = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_information_"+arguments["<country_name>"]+".csv", 'w', newline='')
     spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(['season', 'country', 'predicted_influenza_peak', 'real_influenza_peak', 'predicted_influenza_peak_value', 'real_influenza_peak_value', 'mse', 'pcc'])
+    spamwriter.writerow(['season', 'country', 'predicted_influenza_peak', 'real_influenza_peak', 'predicted_influenza_peak_value', 'real_influenza_peak_value', 'mse', 'pcc', 'p_value'])
 
     top_features_file = open(save_directory+str(year_sel[0]-1)+"-"+str(year_sel[1]-1)+"_features_"+arguments["<country_name>"]+".csv", 'w', newline='')
     top_features_writer = csv.writer(top_features_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -269,7 +270,8 @@ for year_selected in range(year_sel[0], year_sel[1]):
                              results["incidence"][index_peak_m],
                              labels_test["incidence"][index_peak],
                              mean_squared_error(labels_test['incidence'].fillna(0), result),
-                             np.corrcoef(result, labels_test['incidence'].fillna(0), rowvar=False)[0][1]
+                             stats.pearsonr(result, labels_test['incidence'].fillna(0))[0],
+                             stats.pearsonr(result, labels_test['incidence'].fillna(0))[1]
                              ])
         for p in get_important_pages(current_weighted_features, len(current_weighted_features)):
             top_features_writer.writerow([str(year_selected-1)+"-"+str(year_selected),
@@ -311,9 +313,11 @@ print("R^2: ", r2)
 print("------------")
 
 # Print Pearson Coefficient
-pcc = np.corrcoef(all_predicted_values, all_true_labels["incidence"].fillna(0), rowvar=False)[0][1]
+pcc_p = stats.pearsonr(all_predicted_values, all_true_labels["incidence"].fillna(0))
+pcc = pcc_p[0] # pearson value
+p_value = pcc_p[1] # p value
 print("------------")
-print("Pearson Correlation Coeff: ", pcc)
+print("Pearson Correlation Coeff: {} (p={})".format(pcc, p_value))
 print("------------")
 
 # Print important pages
