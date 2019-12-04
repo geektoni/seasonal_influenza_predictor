@@ -16,6 +16,10 @@ from docopt import docopt
 import os
 import glob
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+sns.set()
+
 def get_results_filename(basepath):
     files = [f for f in glob.glob(basepath + "/*-prediction.csv", recursive=True)]
     y = os.path.basename(files[0]).split("-")[0]
@@ -54,3 +58,11 @@ if __name__ == "__main__":
     print("")
     print("Pearson Correlation (value/p): ", stats.pearsonr(data["prediction"], data["incidence"]))
     print("")
+
+    if not args["--no-graph"]:
+        ax = sns.distplot(residuals, label="Residual")
+        plt.figure()
+        ax = sns.distplot(data["incidence"], label="Incidence")
+        ax = sns.distplot(data["prediction"], label="Prediction")
+        plt.legend()
+        plt.show()
