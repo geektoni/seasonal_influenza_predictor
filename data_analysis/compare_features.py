@@ -101,15 +101,37 @@ if __name__ == "__main__":
 
     # Compute how many features are different from zero
     for m in args["<other_method>"]:
+        counter = 0
+        max = (-1, 0)
+        min = (100000000, 0)
         for i in unique_years:
             total_features_used = other_results_df[other_results_df.season == i]["page_name_{}".format(m)].count()
-            print(i, m, total_features_used, total_features_used/len(keywords_cyclerank))
-            print("")
+            if total_features_used > max[0]:
+                max = (total_features_used, i)
+            else:
+                if total_features_used < min[0]:
+                    min = (total_features_used,i)
+            #print(i, m, total_features_used, total_features_used/len(keywords_cyclerank))
+            counter += total_features_used
+            #print("")
+        print(m, counter, "Mean/max/min feature used:", counter/len(unique_years), max, min)
+        print("")
 
+    counter=0
+    max = (-1, 0)
+    min = (100000000, 0)
     for i in unique_years:
         total_features_used = baseline_results_df[baseline_results_df.season == i]["page_name_{}".format(args["<baseline>"])].count()
-        print(i, args["<baseline>"], total_features_used, total_features_used/len(keywords_standard))
-        print("")
+        counter += total_features_used
+        if total_features_used > max[0]:
+            max = (total_features_used, i)
+        else:
+            if total_features_used < min[0]:
+                min = (total_features_used, i)
+        #print(i, args["<baseline>"], total_features_used, total_features_used/len(keywords_standard))
+        #print("")
+    print(args["<baseline>"], counter, "Mean/max/min feature used:", counter/len(unique_years), max, min)
+    print("")
 
     # Loop over the seasons and extract common pages
     total_common = []
@@ -136,7 +158,6 @@ if __name__ == "__main__":
     max_features = 5
 
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    fig = plt.figure(figsize=(9,6))
     index = 1
     incidence = incidence[total]
     incidence = incidence.reset_index()
@@ -188,6 +209,8 @@ if __name__ == "__main__":
     index=1
     for method in all_methods:
 
+        plt.subplot(len(all_methods), 1, index)
+
         year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
         year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
 
@@ -197,14 +220,18 @@ if __name__ == "__main__":
         most_important_features = most_important_features[total]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
         most_important_features = pd.concat([incidence, most_important_features], axis=1)
-        plt.subplot(len(all_methods), 1, index)
         print(most_important_features.columns)
 
         palette = sns.color_palette("Blues")
-        if index == len(all_methods):
-            ax = sns.heatmap(data=most_important_features.corr(), annot=True, xticklabels=True, cmap=palette)
-        else:
-            ax = sns.heatmap(data=most_important_features.corr(), annot=True, xticklabels=False, cmap=palette)
+        corr = most_important_features.corr()
+        print(corr["incidence"])
+        mask = np.zeros_like(corr)
+        mask[np.triu_indices_from(mask)] = True
+        with sns.axes_style("white"):
+            if index == len(all_methods):
+                ax = sns.heatmap(data=corr, mask=mask, annot=True, xticklabels=True, cmap=palette)
+            else:
+                ax = sns.heatmap(data=corr, mask=mask, annot=True, xticklabels=True, cmap=palette)
         index=index+1
 
 
