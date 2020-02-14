@@ -3,7 +3,7 @@
 """Script which can be used to compare the results of two different influenza model
 
 Usage:
-  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>] [--save] [--no-graph]
+  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>] [--save] [--no-graph] [--not-dual]
 
   <baseline>      Data file of the first model
   <other_method>     Data file of the second model
@@ -24,16 +24,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
+pd.set_option('precision', 3)
+
 def correct_name(value):
     if value == "new_data" or value == "old_data":
-        return "LASSO (Categories)"
+        return "Categories"
     elif value == "cyclerank":
-        return "LASSO (Cyclerank)"
+        return "CycleRank"
     elif value == "pageviews":
-        return "LASSO (Categories)"
+        return "Categories"
     elif value == "cyclerank_pageviews":
-        return "LASSO (Cyclerank)"
+        return "CycleRank"
 
+def convert(name):
+    if name == "cyclerank" or name == "cyclerank_pageviews":
+        return "CycleRank"
+    else:
+        return "Categories"
 
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
@@ -49,6 +56,7 @@ if __name__ == "__main__":
     base_dir = args["--basedir"] if args["--basedir"] else "../complete_results"
     country = args["--country"] if args["--country"] else "italy"
     future = "no-future" if args["--no-future"] else "future"
+    not_dual = True if args["--not-dual"] else False
 
     # Read the baseline results and merge them
     baseline_results_path= os.path.join(base_dir, args["<baseline>"], future, country)
@@ -100,45 +108,42 @@ if __name__ == "__main__":
     # FIXME: There may be season for which the mse and pcc are NaN (because maybe we are
     # comparing new_data with old_data). Those lines must be written as nan in the final result.
     for other_results in args["<other_method>"]:
-        #results["imp_mse_{}".format(other_results)] = np.where((results["mse"] - results["mse_{}".format(other_results)])>=0, 'yes', 'no')
-        #results["imp_pcc_{}".format(other_results)] = np.where((results["pcc"] - results["pcc_{}".format(other_results)])>=0, 'no', 'yes')
-        #results["ΔMSE ({})".format(other_results)] = results["mse_{}".format(args["<baseline>"])] - results["mse_{}".format(other_results)]
-        #results["ΔPCC ({})".format(other_results)] = results["pcc_{}".format(args["<baseline>"])] - results["pcc_{}".format(other_results)]
-        results["MSE ({})".format(other_results)] = results["mse_{}".format(other_results)]
-        results["PCC ({})".format(other_results)] = results["pcc_{}".format(other_results)]
-        results["Predicted Peak ({})".format(other_results)] = results["predicted_influenza_peak_{}".format(other_results)]
+        converted_name = convert(other_results)
+        results["MSE ({})".format(converted_name)] = results["mse_{}".format(other_results)]
+        results["PCC ({})".format(converted_name)] = results["pcc_{}".format(other_results)]
+        results["Predicted Peak ({})".format(converted_name)] = results["predicted_influenza_peak_{}".format(other_results)]
         results["Real Peak GT"] = results["real_influenza_peak"]
-        results["Peak agree with GT ({})".format(other_results)] = np.where(results["predicted_influenza_peak_{}".format(other_results)] == results["real_influenza_peak"], 'yes', 'no')
-        results["Difference with GT Peak value ({})".format(other_results)] = results["real_influenza_peak_value"]-results["predicted_influenza_peak_value_{}".format(other_results)]
+        results["Peak agree with GT ({})".format(converted_name)] = np.where(results["predicted_influenza_peak_{}".format(other_results)] == results["real_influenza_peak"], 'yes', 'no')
+        results["Difference with GT Peak value ({})".format(converted_name)] = results["real_influenza_peak_value"]-results["predicted_influenza_peak_value_{}".format(other_results)]
 
     baseline_name = "pagecounts+pageviews" if args["<baseline>"] == "new_data" else "pageviews"
 
-    results["Peak agree with GT ({})".format(baseline_name)] = np.where(
+    results["Peak agree with GT ({})".format(convert(args["<baseline>"]))] = np.where(
         results["predicted_influenza_peak_{}".format(args["<baseline>"])] == results["real_influenza_peak"], 'yes',
         'no')
-    results["Difference with GT Peak value ({})".format(baseline_name)] = results["real_influenza_peak_value"] - results["predicted_influenza_peak_value_{}".format(args["<baseline>"])]
+    results["Difference with GT Peak value ({})".format(convert(args["<baseline>"]))] = results["real_influenza_peak_value"] - results["predicted_influenza_peak_value_{}".format(args["<baseline>"])]
 
     # Specify which columns we want to obtain from the dataframe
     printable_columns = []
     printable_columns.append("season")
-    printable_columns.append("MSE ({})".format(baseline_name))
-    printable_columns += ["MSE ({})".format(m) for m in args["<other_method>"]]
-    printable_columns.append("PCC ({})".format(baseline_name))
-    printable_columns += ["PCC ({})".format(m) for m in args["<other_method>"]]
-    printable_columns += ["Difference with GT Peak value ({})".format(baseline_name)]
-    printable_columns += ["Difference with GT Peak value ({})".format(m) for m in args["<other_method>"]]
-    printable_columns += ["Predicted Peak ({})".format(baseline_name)]
-    printable_columns += ["Predicted Peak ({})".format(m) for m in args["<other_method>"]]
+    printable_columns.append("MSE ({})".format(convert(args["<baseline>"])))
+    printable_columns += ["MSE ({})".format(convert(m)) for m in args["<other_method>"]]
+    printable_columns.append("PCC ({})".format(convert(args["<baseline>"])))
+    printable_columns += ["PCC ({})".format(convert(m)) for m in args["<other_method>"]]
+    #printable_columns += ["Difference with GT Peak value ({})".format(baseline_name)]
+    #printable_columns += ["Difference with GT Peak value ({})".format(m) for m in args["<other_method>"]]
+    printable_columns += ["Predicted Peak ({})".format(convert(args["<baseline>"]))]
+    printable_columns += ["Predicted Peak ({})".format(convert(m)) for m in args["<other_method>"]]
     printable_columns += ["Real Peak GT"]
-    printable_columns.append("Peak agree with GT ({})".format(baseline_name))
-    printable_columns += ["Peak agree with GT ({})".format(m) for m in args["<other_method>"]]
+    printable_columns.append("Peak agree with GT ({})".format(convert(args["<baseline>"])))
+    printable_columns += ["Peak agree with GT ({})".format(convert(m)) for m in args["<other_method>"]]
 
 
 
     results = results.rename(columns={
-    "mse_{}".format(args["<baseline>"]): "MSE ({})".format(baseline_name),
-    "pcc_{}".format(args["<baseline>"]): "PCC ({})".format(baseline_name),
-    "predicted_influenza_peak_{}".format(args["<baseline>"]): "Predicted Peak ({})".format(baseline_name)})
+    "mse_{}".format(args["<baseline>"]): "MSE ({})".format(convert(args["<baseline>"])),
+    "pcc_{}".format(args["<baseline>"]): "PCC ({})".format(convert(args["<baseline>"])),
+    "predicted_influenza_peak_{}".format(args["<baseline>"]): "Predicted Peak ({})".format(convert(args["<baseline>"]))})
 
     print(results[printable_columns].transpose())
 
@@ -191,14 +196,24 @@ if __name__ == "__main__":
     lines = []
     labels = []
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    fig = plt.figure(figsize=(11,6))
+    fig = plt.figure(figsize=(18,4))
     #palette = sns.color_palette("Paired")
     palette = ["red", "blue", "green", "yellow", "green"]
     end_of_seasons = [i for i, n in enumerate(prediction_results["week"].to_list()) if n.split("-")[1] == "15"]
     for other_result in all_methods:
-        plt.subplot(len(all_methods), 1, index)
+        if not not_dual:
+            plt.subplot(len(all_methods), 1, index)
         prediction_results_plot = prediction_results.drop(["week"], axis=1)[["incidence", "prediction_{}".format(other_result)]]
-        ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]], legend=False)
+
+        if not_dual:
+            if other_result == args["<baseline>"]:
+                ax = sns.lineplot(data=prediction_results_plot["incidence"], style="event", dashes=False, color="black", legend=False, label="GT", linewidth=2.5)
+                ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color="red", legend=False, label=correct_name(other_result), linewidth=1.5)
+            else:
+                ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color="blue", legend=False, label=correct_name(other_result), linewidth=1.5)
+        else:
+            ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]], legend=False, label=correct_name(other_result))
+
         lines.append(ax.get_lines()[1])
         labels.append("{}".format(correct_name(other_result)))
         index+=1
@@ -209,19 +224,34 @@ if __name__ == "__main__":
             plt.axvline(x=i, color='k', linestyle='--')
         plt.ylim(min_y_value-2, max_y_value+2)
 
+    # Add line for the first season
+    plt.axvline(x=0, color='k', linestyle='--')
+
     lines.append(ax.get_lines()[0])
     labels.append("ILI Incidence")
 
     plt.xticks(np.arange(len(prediction_results["week"]), step=step), prediction_results["week"].iloc[::step], rotation=90, fontsize=12)
     plt.xlabel("Year-Week", fontsize=12)
-    plt.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=3, fontsize=12)
 
-    if not args["--no-graph"]:
+    if not_dual:
+
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        # Put a legend to the right of the current axis
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.get_legend().set_title(args["--country"].title())
+
+    else:
+        plt.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=3, fontsize=12)
+
+    if not args["--no-graph"] and not args["--save"]:
         fig.tight_layout()
         plt.show()
     else:
         save_filename = "{}_{}_compare_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
-        plt.savefig(save_filename, dpi=200, bbox_inches='tight')
+        plt.savefig(save_filename, dpi=250, bbox_inches='tight')
 
         save_filename = "{}_{}_compare_results_{}_{}.csv".format(start_year, end_year, args["<baseline>"], country)
-        results[printable_columns].to_csv(os.path.join(".", save_filename), index=False, index_label=False, float_format='%.4f')
+        results[printable_columns].round(3).transpose().to_csv(os.path.join(".", save_filename), index=True, header=False, index_label=False, float_format='%.4f')

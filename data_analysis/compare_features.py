@@ -224,7 +224,15 @@ if __name__ == "__main__":
 
         palette = sns.color_palette("Blues")
         corr = most_important_features.corr()
-        print(corr["incidence"])
+
+        print(corr)
+        for e in zip(corr, corr["incidence"]):
+            if e[0] == "incidence":
+                continue
+            print("\item \wiki{{ {} }} (): ${:.2f}$".format(e[0], e[1]))
+
+        #print(corr["incidence"])
+
         mask = np.zeros_like(corr)
         mask[np.triu_indices_from(mask)] = True
         with sns.axes_style("white"):

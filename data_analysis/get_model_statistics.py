@@ -16,6 +16,8 @@ from docopt import docopt
 import os
 import glob
 
+from sklearn.metrics import mean_squared_error
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set()
@@ -57,6 +59,9 @@ if __name__ == "__main__":
     # Get some statistics
     print("")
     print("Pearson Correlation (value/p): ", stats.pearsonr(data["prediction"], data["incidence"]))
+    print("")
+
+    print("Mean Squared Error: ", mean_squared_error(data["prediction"], data["incidence"]))
     print("")
 
     if not args["--no-graph"]:
