@@ -23,8 +23,19 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
+sns.set_context("paper")
 
 from models.models_utils import generate, stz_zero, get_important_pages
+
+def correct_name(value):
+    if value == "new_data" or value == "old_data":
+        return "Categories"
+    elif value == "cyclerank":
+        return "CycleRank"
+    elif value == "pageviews":
+        return "Categories"
+    elif value == "cyclerank_pageviews":
+        return "CycleRank"
 
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
@@ -158,7 +169,7 @@ if __name__ == "__main__":
     max_features = 5
 
     all_methods = [args["<baseline>"]]+args["<other_method>"]
-    index = 1
+    index = 0
     incidence = incidence[total]
     incidence = incidence.reset_index()
     incidence = incidence.drop(["index"], axis=1)
@@ -171,7 +182,7 @@ if __name__ == "__main__":
 
     end_of_seasons = [i for i, n in enumerate(weeks.to_list()) if n.split("-")[1] == "15"]
 
-    fig = plt.figure(figsize=(11,6))
+    fig, ax = plt.subplots(len(all_methods), 1, figsize=(11, 6))
     for method in all_methods:
 
         #year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
@@ -183,32 +194,39 @@ if __name__ == "__main__":
         most_important_features = most_important_features[total]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
         most_important_features = pd.concat([incidence, most_important_features], axis=1)
-        plt.subplot(len(all_methods), 1, index)
-        ax = sns.lineplot(data=most_important_features, style="event", dashes=False)
-        ax.set_title("{}".format(method), pad=5)
-        plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=12)
-        index=index+1
 
-        ax.set_xticks([i for i in np.arange(len(weeks), step=step)])
-        ax.set_xticklabels([" " for i in np.arange(len(weeks), step=step)])
-        plt.ylabel("Pageviews Variation [0, 1]",  fontsize=12)
+        sns.lineplot(data=most_important_features, style="event", dashes=False, ax=ax[index])
+        ax[index].set_title("{}".format(correct_name(method)), pad=5)
+
+        box = ax[index].get_position()
+        ax[index].set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax[index].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        #plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=12)
+
+        ax[index].set_xticks([i for i in np.arange(len(weeks), step=step)])
+        ax[index].set_xticklabels(weeks.iloc[::step], rotation=90)
+        ax[index].set_ylim(-0.1, 1.5)
+        ax[index].set_ylabel("Pageviews Variation [0, 1]")
+        #plt.ylabel("Pageviews Variation [0, 1]",  fontsize=12)
         for i in end_of_seasons:
-            plt.axvline(x=i, color='k', linestyle='--')
+            ax[index].axvline(x=i, color='k', linestyle='--')
 
-        plt.ylim(-0.1, 1.5)
+        #plt.ylim(-0.1, 1.5)
+        index=index+1
 
     if args["--no-graph"]:
         save_filename = "{}_{}_feature_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
         plt.savefig(save_filename, dpi=200, bbox_inches='tight')
 
-    plt.xticks(np.arange(len(weeks), step=step), weeks.iloc[::step], rotation=90, fontsize=12)
-    plt.xlabel("Year-Week", fontsize=12)
+    #plt.xticks(np.arange(len(weeks), step=step), weeks.iloc[::step], rotation=90, fontsize=12)
+    plt.xlabel("Year-Week")
 
-    plt.figure()
-    sns.set(font_scale=1.4)
-    index=1
+    #plt.figure()
+    #sns.set(font_scale=1.4)
+    #index=1
     for method in all_methods:
-
+        break
         plt.subplot(len(all_methods), 1, index)
 
         year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
@@ -248,7 +266,7 @@ if __name__ == "__main__":
         plt.show()
     else:
         save_filename = "{}_{}_correlation_matrix_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
-        plt.savefig(save_filename, dpi=200, bbox_inches='tight')
+        #plt.savefig(save_filename, dpi=200, bbox_inches='tight')
 
 
     # Print overall common features used:
