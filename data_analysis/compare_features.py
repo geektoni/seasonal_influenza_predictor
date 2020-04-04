@@ -3,7 +3,7 @@
 """Script which can be used to compare the features obtained of two different influenza models
 
 Usage:
-  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>] [--save] [--no-graph]
+  compare_models.py <baseline> <other_method>... [--country=<country_name>] [--no-future] [--basedir=<directory>] [--start-year=<start_year>] [--end-year=<end_year>] [--save] [--no-graph] [--top-k=<top_features>]
 
   <baseline>      Data file of the first model
   <other_method>     Data file of the second model
@@ -29,13 +29,13 @@ from models.models_utils import generate, stz_zero, get_important_pages
 
 def correct_name(value):
     if value == "new_data" or value == "old_data":
-        return "Categories"
+        return "Categories (Pageviews+Pagecounts)"
     elif value == "cyclerank":
-        return "CycleRank"
+        return "CycleRank (Pageviews+Pagecounts)"
     elif value == "pageviews":
-        return "Categories"
+        return "Categories (Pageviews)"
     elif value == "cyclerank_pageviews":
-        return "CycleRank"
+        return "CycleRank (Pageviews)"
 
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
@@ -67,6 +67,7 @@ if __name__ == "__main__":
     base_dir = args["--basedir"] if args["--basedir"] else "../complete_results"
     country = args["--country"] if args["--country"] else "italy"
     future = "no-future" if args["--no-future"] else "future"
+    top_features = int(args["--top-k"]) if args["--top-k"] else 5
 
     # Get keywords coming from the various methods
     print("")
@@ -159,14 +160,15 @@ if __name__ == "__main__":
 
 
     # Get only the weeks we want
-    incidence = pd.read_csv(os.path.join(base_dir, args["<baseline>"], future, country, "{}-prediction.csv".format(season_years)))[["week", "incidence"]]
+    incidence = pd.read_csv(os.path.join(base_dir, args["<baseline>"], future, country, "{}-prediction.csv".format(season_years_baseline)))[["week", "incidence"]]
     start_year = season_years_baseline.split("-")[0]+"-42" if not args["--start-year"] else args["--start-year"]
     end_year = season_years_baseline.split("-")[1]+"-15" if not args["--end-year"] else args["--end-year"]
     start_season = incidence["week"] >= start_year
     end_season = incidence["week"] <= str(int(end_year.split("-")[0])+1)+"-"+end_year.split("-")[1]
     total = start_season & end_season
+    total_incidence_size=len(incidence[total])
 
-    max_features = 5
+    max_features = top_features
 
     all_methods = [args["<baseline>"]]+args["<other_method>"]
     index = 0
@@ -185,41 +187,41 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(len(all_methods), 1, figsize=(11, 6))
     for method in all_methods:
 
-        #year_features = pd.read_csv(os.path.join(base_dir, method, future, country, "{}_most_important_features_{}.csv".format(season_years, country))).drop(["week"], axis=1).columns
         year_features = [elem[0] for elem in get_important_pages(generate_dictionary(results, method))]
 
-        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[list(year_features[0:max_features])]
+        most_important_features = generate(2020, [], path_features="../data/wikipedia_{}/{}".format(country, method))[["Week"]+list(year_features[0:max_features])]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
+
+        start_season_data = most_important_features["Week"] >= start_year
+        end_season_data = most_important_features["Week"] <= str(int(end_year.split("-")[0]) + 1) + "-" + end_year.split("-")[1]
+
+        most_important_features = most_important_features[start_season_data & end_season_data]
+        most_important_features = most_important_features.drop(["Week"], axis=1)
+
         most_important_features = stz_zero(most_important_features)
-        most_important_features = most_important_features[total]
         most_important_features = most_important_features.reset_index().drop(["index"], axis=1)
         most_important_features = pd.concat([incidence, most_important_features], axis=1)
 
-        sns.lineplot(data=most_important_features, style="event", dashes=False, ax=ax[index])
-        ax[index].set_title("{}".format(correct_name(method)), pad=5)
+        sns.lineplot(data=most_important_features, dashes=False, ax=ax[index], sort=False)
+        ax[index].set_title("{}".format(correct_name(method)), pad=5, fontsize=12)
 
         box = ax[index].get_position()
         ax[index].set_position([box.x0, box.y0, box.width * 0.8, box.height])
         ax[index].legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-        #plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=12)
-
         ax[index].set_xticks([i for i in np.arange(len(weeks), step=step)])
         ax[index].set_xticklabels(weeks.iloc[::step], rotation=90)
-        ax[index].set_ylim(-0.1, 1.5)
+        ax[index].set_ylim(-0.1, 1.1)
         ax[index].set_ylabel("Pageviews Variation [0, 1]")
-        #plt.ylabel("Pageviews Variation [0, 1]",  fontsize=12)
         for i in end_of_seasons:
             ax[index].axvline(x=i, color='k', linestyle='--')
 
-        #plt.ylim(-0.1, 1.5)
         index=index+1
 
     if args["--no-graph"]:
         save_filename = "{}_{}_feature_results_{}_{}.png".format(start_year, end_year, args["<baseline>"], country)
         plt.savefig(save_filename, dpi=200, bbox_inches='tight')
 
-    #plt.xticks(np.arange(len(weeks), step=step), weeks.iloc[::step], rotation=90, fontsize=12)
     plt.xlabel("Year-Week")
 
     #plt.figure()
