@@ -35,10 +35,14 @@ def correct_name(value):
         return "Categories"
     elif value == "cyclerank_pageviews":
         return "CycleRank"
+    elif value == "pagerank" or value == "pagerank_pageviews":
+        return "PageRank"
 
 def convert(name):
     if name == "cyclerank" or name == "cyclerank_pageviews":
         return "CycleRank"
+    elif name == "pagerank" or name == "pagerank_pageviews":
+        return "PageRank"
     else:
         return "Categories"
 
@@ -210,7 +214,7 @@ if __name__ == "__main__":
                 ax = sns.lineplot(data=prediction_results_plot["incidence"], style="event", dashes=False, color="black", legend=False, label="GT", linewidth=2.5)
                 ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color="red", legend=False, label=correct_name(other_result), linewidth=1.5)
             else:
-                ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color="blue", legend=False, label=correct_name(other_result), linewidth=1.5)
+                ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color=palette[index-1], legend=False, label=correct_name(other_result), linewidth=1.5)
         else:
             ax = sns.lineplot(data=prediction_results_plot, style="event", dashes=False, palette=["black", palette[index-1]], legend=False, label=correct_name(other_result))
 
