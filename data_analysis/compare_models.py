@@ -23,6 +23,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
+sns.set_context("paper")
 
 pd.set_option('precision', 3)
 
@@ -211,7 +212,7 @@ if __name__ == "__main__":
 
         if not_dual:
             if other_result == args["<baseline>"]:
-                ax = sns.lineplot(data=prediction_results_plot["incidence"], style="event", dashes=False, color="black", legend=False, label="GT", linewidth=2.5)
+                ax = sns.lineplot(data=prediction_results_plot["incidence"], style="event", dashes=False, color="black", legend=False, label="GT (Ground Truth)", linewidth=2.5)
                 ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color="red", legend=False, label=correct_name(other_result), linewidth=1.5)
             else:
                 ax = sns.lineplot(data=prediction_results_plot["prediction_{}".format(other_result)], style="event", dashes=False, color=palette[index-1], legend=False, label=correct_name(other_result), linewidth=1.5)
