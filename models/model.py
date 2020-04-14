@@ -207,11 +207,12 @@ for year_selected in range(year_sel[0], year_sel[1]):
         model.fit(train.values.copy(), labels["incidence"].fillna(0).copy().values)
         result = model.predict(test.values)
     elif using_poisson:
-        model = cvglmnet(x=train.values.copy(), y=labels["incidence"].fillna(0).copy().values, family='poisson',
-                         alpha=1.0,
-                         ptype="mse", parallel=True, nfolds=10)
-        result = cvglmnetPredict(model, test.values, ptype='response', s="lambda_min")
-        coeff = cvglmnetCoef(model, s="lambda_min")
+        # Convert features into count based values
+        train_converted = train.values.copy()
+        incidence_converted = labels["incidence"].fillna(1).copy().values
+        model = GLMCV(distr='poisson', score_metric="deviance", max_iter=5000, cv=3)
+        model.fit(train_converted, incidence_converted)
+        result = model.predict(test.values)
 
     # Get the feature coefficients
     if not using_poisson and not using_negbinomial:
@@ -222,7 +223,7 @@ for year_selected in range(year_sel[0], year_sel[1]):
     elif using_negbinomial:
         coeff = model.beta_
     elif using_poisson:
-        coeff = cvglmnetCoef(model, s="lambda_min")
+        coeff = model.beta_
 
     # Add the pair (value, coeff) to a dictionary
     current_weighted_features = dict()
