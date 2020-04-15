@@ -11,6 +11,7 @@ Usage:
 """
 
 import pandas as pd
+import numpy as np
 from scipy import stats
 from docopt import docopt
 import os
@@ -45,6 +46,16 @@ if __name__ == "__main__":
     # Load the data
     data = pd.read_csv(model_file)
 
+    # Get only the weeks we care for
+    start_year = "2007-42" if not args["--start-year"] else args["--start-year"]
+    end_year = "2019-15" if not args["--end-year"] else args["--end-year"]
+
+    start_season = data["week"] >= start_year
+    end_season = data["week"] <= str(int(end_year.split("-")[0]) + 1) + "-" + end_year.split("-")[1]
+    total = start_season & end_season
+
+    data = data[total]
+
     # Describe the data
     print("")
     print("[*] Describe the given dataset {}".format(model_file))
@@ -58,7 +69,10 @@ if __name__ == "__main__":
 
     # Get some statistics
     print("")
-    print("Pearson Correlation (value/p): ", stats.pearsonr(data["prediction"], data["incidence"]))
+    total_pearson = 0
+    for i in np.arange(0, len(data["prediction"]), 26):
+        total_pearson += stats.pearsonr(data["prediction"][i:i+26], data["incidence"][i:i+26])[0]
+    print("Pearson Correlation (value/p): ", total_pearson/(len(data["prediction"])/26))
     print("")
 
     print("Mean Squared Error: ", mean_squared_error(data["prediction"], data["incidence"]))
