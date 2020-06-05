@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import numpy as np
 
 import os
 import glob
@@ -42,7 +43,7 @@ def convert_naming(model):
         return "Categories (PV+PC)"
 
 
-def get_intersection_dataframe(original_data):
+def get_intersection_dataframe(original_data, percentage=False):
 
     # Compute the intersection between all of them
     intersection_df = []
@@ -52,7 +53,11 @@ def get_intersection_dataframe(original_data):
         for second in original_data:
             intersection_value = set.intersection(set(original_data[first].page_name),
                                                   set(original_data[second].page_name))
-            partial_value.append(len(intersection_value)/len(original_data[first])*100)
+
+            if percentage:
+                partial_value.append((len(intersection_value)/len(original_data[first]))*100)
+            else:
+                partial_value.append(len(intersection_value))
         intersection_df.append(partial_value)
 
     # Convert the intersection into a dataframe
@@ -63,13 +68,15 @@ def get_intersection_dataframe(original_data):
 
 
 def get_min_max_mean_feature_selected(df, start_year=2015, end_year=2019):
-    min = 100000
+    min = np.inf
     max = 0
     mean = 0
     seasons = df.season.unique()
+    correct_seasons = 0
     for s in seasons:
         start_end = s.split("-")
         if int(start_end[0]) >= start_year and int(start_end[1]) <= end_year:
+            correct_seasons += 1
             features_slice = df[df.season == s]
             features_selected = len(features_slice)
 
@@ -77,9 +84,10 @@ def get_min_max_mean_feature_selected(df, start_year=2015, end_year=2019):
                 max = features_selected
             if features_selected < min:
                 min = features_selected
+
             mean += features_selected
 
-    return min, max, mean/len(seasons)
+    return min, max, mean/correct_seasons
 
 def get_feature_dictionary(df, start_year=2015, end_year=2019):
     """
@@ -132,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("models", metavar="N", nargs="+", type=str, help="Models we want to check")
     parser.add_argument("--country", type=str, default="italy", help="Country name")
     parser.add_argument("--basedir", type=str, default="../complete_results")
-    parser.add_argument("--future", default=False, action="store_true")
+    parser.add_argument("--future", default=True, action="store_false")
     parser.add_argument("--start-year", default=2015, type=int)
     parser.add_argument("--end-year", default=2019, type=int)
     parser.add_argument("--save", default=False, action="store_true")
@@ -173,14 +181,18 @@ if __name__ == "__main__":
         print("\t{}\t{}\t{}\t{:.2f}".format(convert_naming(model_name), min, max, mean))
 
 
-
-    sns.heatmap(get_intersection_dataframe(total_keywords), annot=True, fmt="f")
-    plt.tight_layout()
-    plt.show()
+    # Get percentage of common features
+    sns.heatmap(get_intersection_dataframe(total_keywords, percentage=True), annot=True, fmt=".2f",
+                cmap=sns.cubehelix_palette(8, start=.5, rot=-.75), linewidths=.5)
+    if not args.save:
+        plt.ylabel("")
+        plt.title(country.title())
+        plt.tight_layout()
+        plt.show()
 
     # Find the common best feature between the various models
-    intersection_features = get_intersection_dataframe(total_features)
-    sns.heatmap(intersection_features, annot=True, fmt="f",
+    intersection_features = get_intersection_dataframe(total_features, percentage=False)
+    sns.heatmap(intersection_features, annot=True, fmt="d",
                 cmap=sns.cubehelix_palette(8, start=.5, rot=-.75), linewidths=.5)
 
     # Save the top-5 feature for each model
