@@ -7,6 +7,29 @@ import glob
 
 import wikipediaapi
 
+import pickle
+
+LANG = {
+        'italy': 'it',
+        'germany': 'de',
+        'belgium': 'nl',
+        'netherlands': 'nl'
+    }
+
+INFLUENZA = {
+        'it': 'Influenza',
+        'de': 'Influenza',
+        'nl': 'Griep'
+    }
+
+def save_obj(obj, name ):
+    with open(name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj(name):
+    with open(name, 'rb') as f:
+        return pickle.load(f)
+
 def get_wikipedia_page_language(wiki_page, language="en", start_lang="it"):
 
     wiki_wiki = wikipediaapi.Wikipedia(start_lang)
@@ -17,6 +40,48 @@ def get_wikipedia_page_language(wiki_page, language="en", start_lang="it"):
         return langlinks.title
     else:
         return "NE"
+
+def get_distance_from_influenza(wiki_page, wiki_graph):
+    if wiki_page in wiki_graph:
+        return wiki_graph[wiki_page]
+    else:
+        return "> 3"
+
+def inspect_wikipedia_tree(language="it", depth=2):
+
+    wiki_wiki = wikipediaapi.Wikipedia(language)
+
+    visited_pages = [(INFLUENZA[language], 1)]
+    discovered_pages = {INFLUENZA[language]: 1}
+
+    while(len(visited_pages) != 0):
+
+        tmp_page, counter = visited_pages.pop()
+
+        if counter >= depth:
+            continue
+
+        if ":" in tmp_page:
+            continue
+
+        tmp_links = wiki_wiki.page(tmp_page).links
+
+        for l in tmp_links.keys():
+            if not l in discovered_pages:
+                if counter < depth:
+                    discovered_pages[l] = counter
+                    visited_pages.append((l, counter+1))
+            else:
+                counter_already = discovered_pages[l]
+                if counter_already > counter:
+                    discovered_pages[l] = counter
+                    visited_pages.append([l, counter])
+
+        print(len(discovered_pages), len(visited_pages))
+
+    save_obj(discovered_pages, "{}-{}-influenza".format(language, depth))
+    return discovered_pages
+
 
 def get_results_filename(basepath, country):
     files = [f for f in glob.glob(basepath + "/*_information_{}.csv".format(country), recursive=True)]
@@ -38,17 +103,17 @@ def get_keywords_prefix(model):
 
 def convert_naming(model):
     if model == "cyclerank":
-        return ("a", "b")
+        return ("a", "b", "c")
     elif model == "cyclerank_pageviews":
-        return ("c", "d")
+        return ("d", "e", "f")
     elif model == "pagerank":
-        return ("e", "f")
+        return ("g", "h", "i")
     elif model == "pagerank_pageviews":
-        return ("g", "h")
+        return ("l", "m", "n")
     elif model == "pageviews":
-        return ("i", "l")
+        return ("o", "p", "q")
     else:
-        return ("m", "n")
+        return ("r", "s", "t")
 
 
 def get_intersection_dataframe(original_data, percentage=False):
@@ -236,13 +301,6 @@ def standardize_data(train, test):
 
 if __name__ == "__main__":
 
-    LANG = {
-        'italy': 'it',
-        'germany': 'de',
-        'belgium': 'nl',
-        'netherlands': 'nl'
-    }
-
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("models", metavar="N", nargs="+", type=str, help="Models we want to check")
@@ -260,6 +318,15 @@ if __name__ == "__main__":
     future = "future" if args.future else "no-future"
     start_year = int(args.start_year)
     end_year = int(args.end_year)
+
+    # Generate wikipedia graph
+    depth = 3
+    graph_name = "./{}-{}-influenza.pkl".format(LANG[country], depth)
+    if os.path.exists(graph_name):
+        print("Graph file exists! using that.")
+        wiki_graph = load_obj(graph_name)
+    else:
+        wiki_graph = inspect_wikipedia_tree(LANG[country], depth)
 
     # Get the keywords for all the models, then compute the intersection between all of them
     total_keywords = {}
@@ -333,13 +400,15 @@ if __name__ == "__main__":
     pages = pd.DataFrame()
     for k in total_features:
 
-        name, type = convert_naming(k)
+        name, type, dist = convert_naming(k)
 
         pages["pages"] = total_features[k]["page_name"][0:5].apply(lambda x: x.replace("_", " ")) + " (" + total_features[k]["page_name"][0:5].apply(lambda x: get_wikipedia_page_language(
             x, 'en', LANG[country]
         )) + ")"
         pages["PCC"] = total_features[k]["PCC"][0:5]
-        top_5_features[[name, type]] = pages
+        pages["distance"] = total_features[k]["page_name"][0:5].apply(lambda x: get_distance_from_influenza(x, wiki_graph))
+        print(pages["distance"])
+        top_5_features[[name, type, dist]] = pages
 
     top_5_features = top_5_features.reindex(sorted(top_5_features.columns), axis=1)
     print(top_5_features)
